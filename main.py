@@ -1,5 +1,7 @@
-import numpy as np
 import cv2
+import numpy as np
+from skimage import img_as_ubyte
+
 
 def findCoins(img):
     contours = []
@@ -10,16 +12,17 @@ def findCoins(img):
     
     _, cont, _ = cv2.findContours(closing , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in cont:
-        #approx = cv2.approxPolyDP(cnt, .03 * cv2.arcLength(cnt, True), True)
-        area = cv2.contourArea(cnt)
-        if (5000 < area <20000):
-            (x, y), rad = cv2.minEnclosingCircle(cnt)
-            rad=rad*0.9
-            area2 = np.pi*pow(rad,2)
-            if(area/area2 > 0.7):
-                contours.append((int(x),int(y),int(rad)))
-                cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
-                cv2.circle(img, (int(x), int(y)), 2, (0, 0, 255), 3)
+        approx = cv2.approxPolyDP(cnt, .03 * cv2.arcLength(cnt, True), True)
+        if len(approx) > 3:
+            area = cv2.contourArea(cnt)
+            if 5000 < area <20000:
+                (x, y), rad = cv2.minEnclosingCircle(cnt)
+                rad=rad*0.9
+                area2 = np.pi*pow(rad,2)
+                if area/area2 > 0.7:
+                    contours.append((int(x),int(y),int(rad)))
+                    cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
+                    cv2.circle(img, (int(x), int(y)), 2, (0, 0, 255), 3)
     return contours
 
 def findBills(img):
