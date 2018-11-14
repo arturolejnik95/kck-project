@@ -6,16 +6,20 @@ def findCoins(img):
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
     kernel = np.ones((2,2),np.uint8)
-    closing = cv2.morphologyEx(thresh,cv2.MORPH_CLOSE,kernel, iterations = 2)
-    circles = cv2.HoughCircles(closing,cv2.HOUGH_GRADIENT,2,20,param1=450,param2=60,minRadius=0,maxRadius=0)
-    for i in circles[0,:]:
-        if 5000 < i[2]*i[2]*np.pi < 15000:
-            # draw the outer circle
-            cv2.circle(img,(i[0],i[1]),i[2],(0,255,0),2)
-            # draw the center of the circle
-            cv2.circle(img,(i[0],i[1]),2,(0,0,255),3)
-            cir = (i[0], i[1], i[2])
-            contours.append(cir)
+    closing = img_as_ubyte(cv2.morphologyEx(thresh,cv2.MORPH_CLOSE,kernel, iterations = 2))
+    
+    _, cont, _ = cv2.findContours(closing , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for cnt in cont:
+        #approx = cv2.approxPolyDP(cnt, .03 * cv2.arcLength(cnt, True), True)
+        area = cv2.contourArea(cnt)
+        if (5000 < area <20000):
+            (x, y), rad = cv2.minEnclosingCircle(cnt)
+            rad=rad*0.9
+            area2 = np.pi*pow(rad,2)
+            if(area/area2 > 0.7):
+                contours.append((int(x),int(y),int(rad)))
+                cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
+                cv2.circle(img, (int(x), int(y)), 2, (0, 0, 255), 3)
     return contours
 
 def findBills(img):
