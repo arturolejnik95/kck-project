@@ -38,10 +38,54 @@ def findCoins(img,surArea):
                 if area/area2 > 0.7:
                     contours.append((int(x),int(y),int(rad)))
     return contours
+	
+def resize(img, width=None, height=None, interpolation = cv2.INTER_AREA):
+    global ratio
+    w, h, _ = img.shape
 
+    if width is None and height is None:
+        return img
+    elif width is None:
+        ratio = height/h
+        width = int(w*ratio)
+        print(width)
+        resized = cv2.resize(img, (height, width), interpolation)
+        return resized
+    else:
+        ratio = width/w
+        height = int(h*ratio)
+        print(height)
+        resized = cv2.resize(img, (height, width), interpolation)
+        return resized
+		
 def findBills(img,surArea):
     contours = []
-    
+    #convert to HSV color scheme
+    flat_object_resized_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    # split HSV to three chanels
+    hue, saturation, value = cv2.split(flat_object_resized_hsv)
+    # threshold to find the contour
+    retval, thresholded = cv2.threshold(saturation, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+	
+	#wypełnienie dziur
+    thresholded_open = cv2.morphologyEx(thresholded, cv2.MORPH_OPEN, (7,7))
+    thresholded_close = cv2.morphologyEx(thresholded_open, cv2.MORPH_CLOSE, (7,7))
+	
+    _, cont, _ = cv2.findContours(thresholded_close , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
+	
+    for c in cnts:
+        # approximate the contour
+        # These methods are used to approximate the polygonal curves of a contour. 
+        # In order to approximate a contour, you need to supply your level of approximation precision. 
+        # In this case, we use 2% of the perimeter of the contour. The precision is an important value to consider. 
+        # If you intend on applying this code to your own projects, you’ll likely have to play around with the precision value.
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+        # if our approximated contour has four points, then
+        # we can assume that we have found our screen
+        if len(approx) == 4:
+            contours.append(approx)	
     return contours
 
 def coinsValue(img, coins):
@@ -95,11 +139,12 @@ ncols = cv2.getOptimalDFTSize(cols)
 image = cv2.imread(name)
 
 coins = findCoins(image, nrows*ncols)
-bills = findBills(image, nrows*ncols)
+bills = findBills(resize(image, height=600), nrows*ncols)
 if coins is not None:
     coinsValue(image, coins)
 if bills is not None:
     billsValue(image, bills)
+    cv2.drawContours(resize(image, height=600), bills, -1, (0,255,0), 3)
 
 cv2.imshow(name, image)
 cv2.waitKey(0)
