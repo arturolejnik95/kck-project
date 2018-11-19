@@ -1,6 +1,10 @@
+from __future__ import print_function
 import cv2
 import numpy as np
 from skimage import img_as_ubyte
+from skimage.feature import peak_local_max
+from skimage.morphology import watershed
+from scipy import ndimage
 
 def avgColor(img):
     blue = 0
@@ -19,73 +23,105 @@ def avgColor(img):
     red = red/i
     return blue, green, red
 
-def findCoins(img,surArea):
-    contours = []
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-    kernel = np.ones((2,2),np.uint8)
-    closing = img_as_ubyte(cv2.morphologyEx(thresh,cv2.MORPH_CLOSE,kernel, iterations = 2))
-    
-    _, cont, _ = cv2.findContours(closing , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for cnt in cont:
-        approx = cv2.approxPolyDP(cnt, .03 * cv2.arcLength(cnt, True), True)
-        if len(approx) > 3:
-            area = cv2.contourArea(cnt)
-            if 0.01*surArea < area < 0.04*surArea:
-                (x, y), rad = cv2.minEnclosingCircle(cnt)
-                rad=rad*0.9
-                area2 = np.pi*pow(rad,2)
-                if area/area2 > 0.7:
-                    contours.append((int(x),int(y),int(rad)))
-    return contours
-	
-def resize(img, width=None, height=None, interpolation = cv2.INTER_AREA):
-    global ratio
-    w, h, _ = img.shape
-
-    if width is None and height is None:
-        return img
-    elif width is None:
-        ratio = height/h
-        width = int(w*ratio)
-        print(width)
-        resized = cv2.resize(img, (height, width), interpolation)
-        return resized
+def resizing(img, size):
+    if img.shape[0] < img.shape[1]:
+        d = size/ img.shape[1]
+        dim = (size, int(img.shape[0] * d))
+        img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
     else:
-        ratio = width/w
-        height = int(h*ratio)
-        print(height)
-        resized = cv2.resize(img, (height, width), interpolation)
-        return resized
-		
-def findBills(img,surArea):
+        d = size / img.shape[0]
+        dim = (int(img.shape[1] * d), size)
+        img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+    return img
+
+def findCoins(img):
     contours = []
-    #convert to HSV color scheme
-    flat_object_resized_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    # split HSV to three chanels
-    hue, saturation, value = cv2.split(flat_object_resized_hsv)
-    # threshold to find the contour
-    retval, thresholded = cv2.threshold(saturation, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-	
-	#wypełnienie dziur
-    thresholded_open = cv2.morphologyEx(thresholded, cv2.MORPH_OPEN, (7,7))
-    thresholded_close = cv2.morphologyEx(thresholded_open, cv2.MORPH_CLOSE, (7,7))
-	
-    _, cont, _ = cv2.findContours(thresholded_close , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    surArea = img.shape[0] * img.shape[1]
+    
+    shifted = cv2.pyrMeanShiftFiltering(img, 21, 51)
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    if np.mean(gray) > 127:
+        gray = 255 - gray
+    _, thresh = cv2.threshold(gray, 0, 255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    kernel1 = np.ones((7,7), np.uint8)
+    kernel2 = np.ones((12,12), np.uint8)
+    kernel3 = np.ones((7,7), np.uint8)
+    thresh = cv2.dilate(thresh, kernel1, iterations=1)
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel2)
+    thresh = cv2.erode(thresh, kernel3, iterations=1)
+    cv_image = thresh.copy()
+    
+    cv2.imshow('1', thresh)
+    cv2.waitKey(0)
+    
+    D = ndimage.distance_transform_edt(cv_image)
+    
+    localMax = peak_local_max(D, indices=False, min_distance=20, labels=cv_image)
+    
+    markers = ndimage.label(localMax, structure=np.ones((3, 3)))[0]
+    labels = watershed(-D, markers, mask=cv_image)
+    
+    for label in np.unique(labels):
+        if label == 0:
+            continue
+        mask = np.zeros(gray.shape, dtype="uint8")
+        mask[labels == label] = 255
+        
+        
+        _, cont, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in cont:
+            approx = cv2.approxPolyDP(cnt, .03 * cv2.arcLength(cnt, True), True)
+            if len(approx) > 3:
+                area = cv2.contourArea(cnt)
+                if 0.001*surArea < area < 0.03*surArea:
+                    (x, y), rad = cv2.minEnclosingCircle(cnt)
+                    rad = rad * 0.95
+                    area2 = np.pi*pow(rad,2)
+                    if area/area2 > 0.7:
+                        contours.append((int(x),int(y),int(rad)))
+                        cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
+    return contours
+
+def findBills(img, coins):
+    contours = []
+    surArea = img.shape[0] * img.shape[1]
+    
+    shifted = cv2.pyrMeanShiftFiltering(img, 21, 51)
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    if np.mean(gray) > 127:
+        gray = 255 - gray
+    _, thresh = cv2.threshold(gray, 0, 255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    
+    for c in coins:
+        x, y, rad = c
+        cv2.circle(thresh, (int(x), int(y)), int(rad + 10), (0, 0, 0), -1)
+    
+    kernel1 = np.ones((5,5), np.uint8)
+    kernel2 = np.ones((25,25), np.uint8)
+    kernel3 = np.ones((10,10), np.uint8)
+    thresh = cv2.dilate(thresh, kernel1, iterations=4)
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel2)
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel3)
+
+    cv2.imshow('2', thresh)    
+    cv2.waitKey(0)
+    
+    _, cont, _ = cv2.findContours(thresh , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
-	
-    for c in cont:
+
+    for cnt in cont:
         # approximate the contour
         # These methods are used to approximate the polygonal curves of a contour. 
         # In order to approximate a contour, you need to supply your level of approximation precision. 
         # In this case, we use 2% of the perimeter of the contour. The precision is an important value to consider. 
         # If you intend on applying this code to your own projects, you’ll likely have to play around with the precision value.
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+        peri = cv2.arcLength(cnt, True)
+        approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+        area = cv2.contourArea(cnt)
         # if our approximated contour has four points, then
         # we can assume that we have found our screen
-        if len(approx) == 4:
-            contours.append(approx)	
+        if len(approx) == 4 and 0.05 * surArea < area < 0.95 * surArea:
+            contours.append(approx)
     return contours
 
 def coinsValue(img, coins):
@@ -131,20 +167,18 @@ def coinsValue(img, coins):
 def billsValue(img, bills):
     return 0
 
-name = '1.jpg'
-image = cv2.imread(name, 0)
-rows, cols = image.shape
-nrows = cv2.getOptimalDFTSize(rows)
-ncols = cv2.getOptimalDFTSize(cols)
+name = 'money.jpg'
 image = cv2.imread(name)
+image = resizing(image, 500)
+image2 = image.copy
 
-coins = findCoins(image, nrows*ncols)
-bills = findBills(resize(image, height=600), nrows*ncols)
+coins = findCoins(image)
+bills = findBills(image, coins)
 if coins is not None:
     coinsValue(image, coins)
 if bills is not None:
     billsValue(image, bills)
-    cv2.drawContours(resize(image, height=600), bills, -1, (0,255,0), 3)
+    cv2.drawContours(image, bills, -1, (0,255,0), 3)
 
 cv2.imshow(name, image)
 cv2.waitKey(0)
