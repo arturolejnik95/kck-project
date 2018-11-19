@@ -8,7 +8,7 @@ def avgColor(img):
     red = 0
     i = 0
     for row in img:
-        for (b, g, r) in row:
+        for (b, g, r)git  in row:
             if(b != 0 and g != 0 and r != 0):
                 blue = blue + b
                 green = green + g
