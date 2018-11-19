@@ -8,7 +8,7 @@ def avgColor(img):
     red = 0
     i = 0
     for row in img:
-        for (b, g, r)git  in row:
+        for (b, g, r)  in row:
             if(b != 0 and g != 0 and r != 0):
                 blue = blue + b
                 green = green + g
@@ -74,7 +74,7 @@ def findBills(img,surArea):
     _, cont, _ = cv2.findContours(thresholded_close , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
 	
-    for c in cnts:
+    for c in cont:
         # approximate the contour
         # These methods are used to approximate the polygonal curves of a contour. 
         # In order to approximate a contour, you need to supply your level of approximation precision. 
@@ -131,7 +131,7 @@ def coinsValue(img, coins):
 def billsValue(img, bills):
     return 0
 
-name = 'money.jpg'
+name = '1.jpg'
 image = cv2.imread(name, 0)
 rows, cols = image.shape
 nrows = cv2.getOptimalDFTSize(rows)
