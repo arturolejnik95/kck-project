@@ -69,6 +69,62 @@ def findCoinsAdaptiveThresholding(img,surArea):
 	
     cv2.imshow('final result', img)
     return contours
+'''
+lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+cv2.imshow("lab",img)
+
+#-----Splitting the LAB image to different channels-------------------------
+l, a, b = cv2.split(img)
+cv2.imshow('l_channel', l)
+cv2.imshow('a_channel', a)
+cv2.imshow('b_channel', b)
+
+#-----Applying CLAHE to L-channel-------------------------------------------
+clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+cl = clahe.apply(l)
+cv2.imshow('CLAHE output', cl)
+
+#-----Merge the CLAHE enhanced L-channel with the a and b channel-----------
+limg = cv2.merge((cl,a,b))
+cv2.imshow('limg', limg)
+
+#-----Converting image from LAB Color model to RGB model--------------------
+final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+cv2.imshow('final', final)
+'''
+def findCoinsBright(img,surArea):
+    contours = []
+	
+    new_image = np.zeros(img.shape, img.dtype)
+
+    alpha = 2 # Simple contrast control
+    beta = -600   # Simple brightness control
+	
+
+    new_image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)	
+	
+    flat_object_resized_hsv = cv2.cvtColor(new_image, cv2.COLOR_BGR2HSV)	
+    hue, saturation, value = cv2.split(flat_object_resized_hsv)
+	
+    flat_object_resized_hsv = resize(flat_object_resized_hsv, height=600)
+    cv2.imshow('flat_object_resized_hsv', flat_object_resized_hsv)
+    retval, thresholded = cv2.threshold(saturation, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+		
+    cv2.imshow('thresholded', thresholded)	
+	 
+	
+    _, cont, _ = cv2.findContours(thresholded , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)	
+	
+	
+    new_image = resize(new_image, height=600)	
+    cv2.imshow('Original Image', img)
+    cv2.imshow('New Image', new_image)
+
+	
+    cv2.drawContours(img, contours, -1, (0,255,0), 3)
+	
+    cv2.imshow('contours', img)	
+    return contours
 	
 def resize(img, width=None, height=None, interpolation = cv2.INTER_AREA):
     global ratio
@@ -89,13 +145,14 @@ def resize(img, width=None, height=None, interpolation = cv2.INTER_AREA):
         resized = cv2.resize(img, (height, width), interpolation)
         return resized
 		
-def findBills(img,surArea):
+def findBillsD(img,surArea):
     contours = []
     #convert to HSV color scheme
     flat_object_resized_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     # split HSV to three chanels
     hue, saturation, value = cv2.split(flat_object_resized_hsv)
     # threshold to find the contour
+
     retval, thresholded = cv2.threshold(saturation, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 	
 	#wypełnienie dziur
@@ -162,7 +219,7 @@ def coinsValue(img, coins):
 def billsValue(img, bills):
     return 0
 
-name = '46c.jpg'
+name = '1.jpg'
 image = cv2.imread(name, 0)
 rows, cols = image.shape
 nrows = cv2.getOptimalDFTSize(rows)
@@ -172,9 +229,9 @@ image = cv2.imread(name)
 resizedImage = resize(image, height=600)
 
 coins = findCoins(image, nrows*ncols)
-bills = findBills(resizedImage, nrows*ncols)
+bills = findBillsD(resizedImage, nrows*ncols)
 
-coinsAdaptive = findCoinsAdaptiveThresholding(resizedImage, nrows*ncols)
+coinsAdaptive = findCoinsBright(resizedImage, nrows*ncols)
 
 '''
 if coins is not None:
