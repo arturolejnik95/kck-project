@@ -8,7 +8,7 @@ def avgColor(img):
     red = 0
     i = 0
     for row in img:
-        for (b, g, r)  in row:
+        for (b, g, r) in row:
             if(b != 0 and g != 0 and r != 0):
                 blue = blue + b
                 green = green + g
@@ -37,6 +37,37 @@ def findCoins(img,surArea):
                 area2 = np.pi*pow(rad,2)
                 if area/area2 > 0.7:
                     contours.append((int(x),int(y),int(rad)))
+    return contours
+	
+def findCoinsAdaptiveThresholding(img,surArea):
+    contours = []
+	
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    cv2.imshow("gray", gray)
+	
+    gray_blur = cv2.GaussianBlur(gray, (15, 15), 0)
+    cv2.imshow("gray_blur", gray_blur)
+    
+    thresh = cv2.adaptiveThreshold(gray_blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 1)
+
+    cv2.imshow("adaptive", thresh)
+	
+    kernel = np.ones((3, 3), np.uint8)
+    closing = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=4)
+    cont_img = closing.copy()
+    _, contours,_ = cv2.findContours(cont_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+	
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area < 2000 or area > 4000:
+            continue
+        if len(cnt) < 5:
+            continue
+        ellipse = cv2.fitEllipse(cnt)
+        cv2.ellipse(img, ellipse, (0,255,0), 2)
+	
+	
+    cv2.imshow('final result', img)
     return contours
 	
 def resize(img, width=None, height=None, interpolation = cv2.INTER_AREA):
@@ -131,21 +162,27 @@ def coinsValue(img, coins):
 def billsValue(img, bills):
     return 0
 
-name = '1.jpg'
+name = '46c.jpg'
 image = cv2.imread(name, 0)
 rows, cols = image.shape
 nrows = cv2.getOptimalDFTSize(rows)
 ncols = cv2.getOptimalDFTSize(cols)
 image = cv2.imread(name)
 
+resizedImage = resize(image, height=600)
+
 coins = findCoins(image, nrows*ncols)
-bills = findBills(resize(image, height=600), nrows*ncols)
+bills = findBills(resizedImage, nrows*ncols)
+
+coinsAdaptive = findCoinsAdaptiveThresholding(resizedImage, nrows*ncols)
+
+'''
 if coins is not None:
     coinsValue(image, coins)
 if bills is not None:
     billsValue(image, bills)
-    cv2.drawContours(resize(image, height=600), bills, -1, (0,255,0), 3)
-
-cv2.imshow(name, image)
+    cv2.drawContours(resizedImage, bills, -1, (0,255,0), 3)
+'''
+cv2.imshow(name, resizedImage)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
