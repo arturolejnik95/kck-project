@@ -37,10 +37,12 @@ def resizing(img, size):
 
 def remove_not_silver(img):
     difference = 20
+    white_limit = 240
+    black_limit = 20
     new_img = img.copy()
     for rowindex, row in enumerate(img):
         for index, (b, g, r) in enumerate(row):		
-            if abs(int(b) - int(g)) >= difference or abs(int(b) - int(r)) >= difference or abs(int(r) - int(g)) >= difference:
+            if abs(int(b) - int(g)) >= difference or abs(int(b) - int(r)) >= difference or abs(int(r) - int(g)) >= difference or (b > white_limit and r > white_limit and g > white_limit) or (b < black_limit and r < black_limit and g < black_limit):
                 new_img[rowindex][index] = (0,0,0)
     return new_img
 	
