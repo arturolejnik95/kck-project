@@ -20,20 +20,6 @@ from utilites import remove_not_gold
 from utilites import resizing
 from utilites import avgColor
 
-
-
-
-
-
-
-
-
-
-	
-
-	
-	
-
 '''
 lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
 cv2.imshow("lab",img)
@@ -57,9 +43,6 @@ cv2.imshow('limg', limg)
 final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 cv2.imshow('final', final)
 '''
-
-		
-
 
 def coinsValue(img, coins):
     for c, (x, y, rad) in enumerate(coins):
