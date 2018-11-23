@@ -22,7 +22,7 @@ def remove_not_gold(img):
     new_img = img.copy()
     for rowindex, row in enumerate(img):
         for index, (b, g, r) in enumerate(row):		
-            if b > 32 or r < 200 or g < 140 or g > 200:
+            if b > 150 or r < 150 or g < 140 or g > 200:
                 new_img[rowindex][index] = (0,0,0)
     return new_img
 	
