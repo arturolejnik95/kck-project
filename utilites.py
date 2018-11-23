@@ -8,6 +8,25 @@ from scipy import ndimage
 from skimage import img_as_ubyte
 
 
+def remove_not_silver(img):
+    difference = 20
+    new_img = img.copy()
+    for rowindex, row in enumerate(img):
+        for index, (b, g, r) in enumerate(row):		
+            if abs(int(b) - int(g)) >= difference or abs(int(b) - int(r)) >= difference or abs(int(r) - int(g)) >= difference:
+                new_img[rowindex][index] = (0,0,0)
+    return new_img
+	
+def remove_not_gold(img):
+    difference = 20
+    new_img = img.copy()
+    for rowindex, row in enumerate(img):
+        for index, (b, g, r) in enumerate(row):		
+            if b > 32 or r < 200 or g < 140 or g > 200:
+                new_img[rowindex][index] = (0,0,0)
+    return new_img
+	
+	
 def apply_brightness_contrast(input_img, brightness, contrast):
 
     if brightness != 0:
