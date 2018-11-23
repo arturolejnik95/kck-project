@@ -7,6 +7,33 @@ from skimage.morphology import watershed
 from scipy import ndimage
 from skimage import img_as_ubyte
 
+def avgColor(img):
+    blue = 0
+    green = 0
+    red = 0
+    i = 0
+    for row in img:
+        for (b, g, r) in row:
+            if(b != 0 and g != 0 and r != 0):
+                blue = blue + b
+                green = green + g
+                red = red + r
+                i = i + 1
+    blue = blue/i
+    green = green/i
+    red = red/i
+    return blue, green, red
+
+def resizing(img, size):
+    if img.shape[0] < img.shape[1]:
+        d = size/ img.shape[1]
+        dim = (size, int(img.shape[0] * d))
+        img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
+    else:
+        d = size / img.shape[0]
+        dim = (int(img.shape[1] * d), size)
+        img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+    return img
 
 def remove_not_silver(img):
     difference = 20
