@@ -6,6 +6,8 @@ from skimage.feature import peak_local_max
 from skimage.morphology import watershed
 from scipy import ndimage
 from skimage import img_as_ubyte
+from find_coins import findCoinsArtur
+from find_bills import findBillsArtur
 
 def avgColor(img):
     blue = 0
@@ -24,30 +26,7 @@ def avgColor(img):
     red = red/i
     return blue, green, red
 
-def apply_brightness_contrast(input_img, brightness, contrast):
 
-    if brightness != 0:
-        if brightness > 0:
-            shadow = brightness
-            highlight = 255
-        else:
-            shadow = 0
-            highlight = 255 + brightness
-        alpha_b = (highlight - shadow)/255
-        gamma_b = shadow
-
-        buf = cv2.addWeighted(input_img, alpha_b, input_img, 0, gamma_b)
-    else:
-        buf = input_img.copy()
-
-    if contrast != 0:
-        f = 131*(contrast + 127)/(127*(131-contrast))
-        alpha_c = f
-        gamma_c = 127*(1-f)
-
-        buf = cv2.addWeighted(buf, alpha_c, buf, 0, gamma_c)
-
-    return buf
 
 def resizing(img, size):
     if img.shape[0] < img.shape[1]:
@@ -60,136 +39,9 @@ def resizing(img, size):
         img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
     return img
 
-def findCoinsArtur(img):
-    surArea = img.shape[0] * img.shape[1]
-    contours = []
-    
-    # do the laplacian filtering
-    kernel = np.array([[1, 1, 1], [1, -8, 1], [1, 1, 1]], dtype=np.float32)
-    imgLaplacian = cv2.filter2D(img, cv2.CV_32F, kernel)
-    sharp = np.uint8(img)
-    imgResult = sharp - imgLaplacian
-    
-    # convert back to 8bits gray scale
-    imgLaplacian = np.clip(imgLaplacian, 0, 255)
-    imgLaplacian = np.uint8(imgLaplacian)
-    imgResult = np.clip(imgResult, 0, 255)
-    imgResult = imgResult.astype('uint8')    
-    
-    #contrast and brightness
-    gray = cv2.cvtColor(imgResult, cv2.COLOR_BGR2GRAY)
-    if np.mean(gray) > 150:
-        imgResult = apply_brightness_contrast(imgResult, 0, 127)
-    elif 120 < np.mean(gray) < 150:
-        imgResult = apply_brightness_contrast(imgResult, -70, 127)
-    else:
-        imgResult = apply_brightness_contrast(imgResult, 80, 127)
-    
-    
-    #transform image
-    gray = cv2.cvtColor(imgResult, cv2.COLOR_BGR2GRAY)
-    if np.mean(gray) > 180:
-        gray = 255 - gray
-    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    kernel1 = np.array([[0, 0, 1, 0, 0], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [0, 0, 1, 0, 0]], dtype=np.uint8)
-    kernel2 = np.array([[0, 1, 1, 0], [1, 1, 1, 1], [1, 1, 1, 1], [0, 1, 1, 0]], dtype=np.uint8)
-    kernel3 = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=np.uint8)
-    binary = cv2.dilate(binary,kernel3,iterations = 2)
-    _, binary = cv2.threshold(binary,1,128,cv2.THRESH_BINARY_INV)
-    binary = cv2.erode(binary,kernel3,iterations = 1)
-    if np.mean(binary) > 64:
-        binary = 128 - binary
-        
-    #watershed    
-    dist = cv2.distanceTransform(binary, cv2.DIST_L2, 3)
-    cv2.normalize(dist, dist, 0, 1.0, cv2.NORM_MINMAX)
-    
-    _, dist = cv2.threshold(dist, 0.05, 1.0, cv2.THRESH_BINARY)
 
-    kernel2 = np.ones((3,3), dtype=np.uint8)
-    dist = cv2.dilate(dist, kernel2)
-    dist_8u = dist.astype('uint8')    
-    
-    D = ndimage.distance_transform_edt(dist_8u)
-    localMax = peak_local_max(D, indices=False, min_distance=20, labels=dist_8u)
-    markers = ndimage.label(localMax, structure=np.ones((3, 3)))[0]
-    labels = watershed(-D, markers, mask=dist_8u)
-    
-    #contours
-    for label in np.unique(labels):
-        if label == 0:
-            continue
-        mask = np.zeros(dist_8u.shape, dtype="uint8")
-        mask[labels == label] = 255
-        
-        _, cont, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        for cnt in cont:
-            area = cv2.contourArea(cnt)
-            if 0.002*surArea < area < 0.05*surArea:
-                (x, y), rad = cv2.minEnclosingCircle(cnt)
-                rad = rad * 0.95
-                area2 = np.pi*pow(rad,2)
-                if 0.002*surArea < area2 < 0.05*surArea and area/area2 > 0.6:
-                    contours.append((int(x),int(y),int(rad)))
-                    cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)   
-    return contours
 
-def findBillsArtur(img, coins):
-    surArea = img.shape[0] * img.shape[1]
-    contours = []
-    
-    # do the laplacian filtering
-    kernel = np.array([[1, 1, 1], [1, -8, 1], [1, 1, 1]], dtype=np.float32)
-    imgLaplacian = cv2.filter2D(img, cv2.CV_32F, kernel)
-    sharp = np.uint8(img)
-    imgResult = sharp - imgLaplacian
-    
-    # convert back to 8bits gray scale
-    imgLaplacian = np.clip(imgLaplacian, 0, 255)
-    imgLaplacian = np.uint8(imgLaplacian)
-    imgResult = np.clip(imgResult, 0, 255)
-    imgResult = imgResult.astype('uint8')    
-    
-    #contrast and brightness
-    gray = cv2.cvtColor(imgResult, cv2.COLOR_BGR2GRAY)
-    if np.mean(gray) > 150:
-        imgResult = apply_brightness_contrast(imgResult, 0, 127)
-    elif 120 < np.mean(gray) < 150:
-        imgResult = apply_brightness_contrast(imgResult, -70, 127)
-    else:
-        imgResult = apply_brightness_contrast(imgResult, 80, 127)
-    
-    gray = cv2.cvtColor(imgResult, cv2.COLOR_BGR2GRAY)
-    if np.mean(gray) > 180:
-        gray = 255 - gray
-    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    
-    kernel1 = np.ones((2, 2), dtype=np.uint8)
-    kernel2 = np.array([[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1,1]], dtype=np.uint8)
-    kernel3 = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=np.uint8)
-    binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE, kernel1)
-    _, binary = cv2.threshold(binary,0,255,cv2.THRESH_BINARY)
-    binary = cv2.erode(binary,kernel3,iterations = 2)
-    if np.mean(binary) > 128:
-        binary = 255 - binary
-        
-    
-    cv2.imshow('1', binary)
-    cv2.waitKey(0)
-    
-    _, cont, _ = cv2.findContours(binary , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
 
-    for cnt in cont:
-        peri = cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
-        area = cv2.contourArea(cnt)
-        
-        if len(approx) > 3 and 0.05 * surArea < area < 0.40 * surArea:
-            peri2 = 6*np.sqrt(area/2)
-            if 1.1 > peri/peri2 > 0.9:
-                contours.append(approx)
-    return contours
 	
 def findCoinsAdaptiveThresholding(img):
     contours = []
@@ -221,6 +73,9 @@ def findCoinsAdaptiveThresholding(img):
 	
     cv2.imshow('final result', img)
     return contours
+	
+	
+
 '''
 lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
 cv2.imshow("lab",img)
@@ -355,7 +210,7 @@ def coinsValue(img, coins):
 def billsValue(img, bills):
     return 0
 
-name = 'money.jpg'
+name = '1.jpg'
 image = cv2.imread(name)
 image = resizing(image, 500)
 image2 = image.copy()
@@ -364,6 +219,7 @@ coins = findCoinsArtur(image)
 bills = findBillsArtur(image, coins)
 #if coins is not None:
     #coinsValue(image, coins)
+cv2.drawContours(image, coins, -1, (0,255,0), 3)
 if bills is not None:
     billsValue(image, bills)
     cv2.drawContours(image, bills, -1, (0,255,0), 3)
