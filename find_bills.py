@@ -13,44 +13,53 @@ def findBillsArtur(img, coins):
     surArea = img.shape[0] * img.shape[1]
     contours = []
     
-    # do the laplacian filtering
-    kernel = np.array([[1, 1, 1], [1, -8, 1], [1, 1, 1]], dtype=np.float32)
-    imgLaplacian = cv2.filter2D(img, cv2.CV_32F, kernel)
-    sharp = np.uint8(img)
-    imgResult = sharp - imgLaplacian
+    blur = cv2.GaussianBlur(img,(15,15),0)
+    cv2.imshow('Blur',blur)
+    contrast = apply_brightness_contrast(blur, 0, 85)
+    cv2.imshow('Contrast',contrast)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    if np.mean(gray) > 127:
+        contrast = 255 - contrast
     
-    # convert back to 8bits gray scale
-    imgLaplacian = np.clip(imgLaplacian, 0, 255)
-    imgLaplacian = np.uint8(imgLaplacian)
-    imgResult = np.clip(imgResult, 0, 255)
-    imgResult = imgResult.astype('uint8')    
+    kernel1 = np.array([[-1,-1,-1],[-1,30,-1],[-1,-1,-1]])
+    sharp = cv2.filter2D(contrast,-1,kernel1)
+    cv2.imshow('Sharp',sharp)
+    gray = cv2.cvtColor(sharp, cv2.COLOR_BGR2GRAY)
+    _, binary = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)  
+    cv2.imshow('Binary',binary)
     
-    #contrast and brightness
-    gray = cv2.cvtColor(imgResult, cv2.COLOR_BGR2GRAY)
-    if np.mean(gray) > 150:
-        imgResult = apply_brightness_contrast(imgResult, 0, 127)
-    elif 120 < np.mean(gray) < 150:
-        imgResult = apply_brightness_contrast(imgResult, -70, 127)
-    else:
-        imgResult = apply_brightness_contrast(imgResult, 80, 127)
-	    
-    gray = cv2.cvtColor(imgResult, cv2.COLOR_BGR2GRAY)
-    if np.mean(gray) > 180:
-        gray = 255 - gray
-    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    
-    kernel1 = np.ones((2, 2), dtype=np.uint8)
-    kernel2 = np.array([[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1,1]], dtype=np.uint8)
-    kernel3 = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=np.uint8)
-    binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE, kernel1)
-    _, binary = cv2.threshold(binary,0,255,cv2.THRESH_BINARY)
-    binary = cv2.erode(binary,kernel3,iterations = 2)
-    if np.mean(binary) > 128:
+    if np.mean(binary) > 127:
         binary = 255 - binary
+    cv2.imshow('Binary2',binary)
+    
+    cont1 = []
+    _, cont, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
+
+    for cnt in cont:
+        peri = cv2.arcLength(cnt, True)
+        approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+        area = cv2.contourArea(cnt)
+        
+        if 7 > len(approx) > 3 and 0.03 * surArea < area < 0.40 * surArea:
+            peri2 = 6*np.sqrt(area*1.25/2)
+            print(peri/peri2)
+            if 1.15 > peri/peri2 > 0.85:
+                cont1.append(approx)
+    if coins is not None:            
+        for c in coins:
+            (x, y), rad = cv2.minEnclosingCircle(c)
+            cv2.circle(binary, (int(x), int(y)), int(rad+3), (0, 0, 0), 2)
+    
+    kernel2 = np.ones((5,5), dtype=np.uint8)
+    kernel3 = np.ones((8,8), dtype=np.uint8)
+    binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE, kernel3)
+    binary = cv2.dilate(binary,kernel2,iterations=6)
+    binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE, kernel3)
+    binary = cv2.erode(binary,kernel2,iterations=3)
         
     
-    cv2.imshow('findBillsBinary', binary)
-    
+    cont2 = []
     _, cont, _ = cv2.findContours(binary , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
 
@@ -59,10 +68,19 @@ def findBillsArtur(img, coins):
         approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
         area = cv2.contourArea(cnt)
         
-        if len(approx) > 3 and 0.05 * surArea < area < 0.40 * surArea:
-            peri2 = 6*np.sqrt(area/2)
-            if 1.1 > peri/peri2 > 0.9:
-                contours.append(approx)
+        if 7 > len(approx) > 3 and 0.03 * surArea < area < 0.40 * surArea:
+            peri2 = 6*np.sqrt(area*1.25/2)
+            print(peri/peri2)
+            if 1.15 > peri/peri2 > 0.85:
+                cont2.append(approx)
+                
+    if len(cont1) >= len(cont2) and len(cont1) > 0:
+        for c in cont1:
+            contours.append(c)
+    elif len(cont1) < len(cont2) and len(cont2) > 0:
+        for c in cont2:
+            contours.append(c)
+        cv2.imshow('Binary2',binary)
     print("findBillsArtur found: ", len(contours))
     return contours
 	
