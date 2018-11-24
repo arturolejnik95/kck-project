@@ -85,8 +85,45 @@ def coinsValue(img, coins):
         #cv2.imshow('1', crop_img22)
         #cv2.waitKey(0)
         
-def billsValue(img, bills):
-    return 0
+def billsValue(img, bills, dwadziescia, piecdziesiat):
+    for c, bill in enumerate(bills):        
+        kernel1 = np.array([[-1,-1,-1],[-1,9,-1],[-1,-1,-1]])
+        sharp = cv2.filter2D(img,-1,kernel1)
+        contrast = apply_brightness_contrast(sharp, 0, 127)
+        blur = cv2.GaussianBlur(contrast,(15,15),0)
+        
+        mask = np.zeros(blur.shape, dtype = np.uint8)
+        cv2.drawContours(mask, [bill], 0, (255, 255, 255), -1)
+        blur[mask[:,:] == 0] = 0
+        
+        hsv = cv2.cvtColor(blur,cv2.COLOR_BGR2HSV)
+        i = 0
+        j = 0
+        hsum = 0
+        k = 0
+        for row in hsv:
+            for h, s, v in row:
+                if s < 50 and v > 205:
+                    s = 0
+                    v = 0
+                    blur[i,j,0] = 0
+                    blur[i,j,1] = 0
+                    blur[i,j,2] = 0
+                if s > 50 and v > 50 and v < 205:
+                    hsum = hsum + h
+                    k = k + 1                    
+                j = j + 1
+            i = i + 1
+            j = 0
+        b, g, r = avgColor(blur)
+        if k > 0:
+            val = hsum/k
+            print('{}'.format(val))
+            if val < 15:
+                dwadziescia = dwadziescia + 1
+            else:
+                piecdziesiat = piecdziesiat + 1
+    return dwadziescia, piecdziesiat
 
 names = [0] * 143
 numbers = ["%03d" % i for i in range(1,27)]
@@ -117,7 +154,7 @@ for i, number in enumerate(numbers):
     for contour in silver:
         cv2.circle(image, (int(contour[0]), int(contour[1])), int(contour[2]), (0, 255, 0), 2)
     if bills is not None:
-        billsValue(image, bills)
+        dwadziescia, piecdziesiat = billsValue(image2, bills, 0, 0)
         cv2.drawContours(image, bills, -1, (0,255,0), 3)
 		
 
@@ -127,5 +164,8 @@ for i, number in enumerate(numbers):
 		
     cv2.imshow(names[i], image)
     cv2.waitKey(0)
-
     cv2.destroyAllWindows()
+
+    
+    print('Dwadziescia: {}'.format(dwadziescia))
+    print('Piecdziesiat: {}'.format(piecdziesiat))
