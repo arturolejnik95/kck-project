@@ -83,3 +83,52 @@ def apply_brightness_contrast(input_img, brightness, contrast):
         buf = cv2.addWeighted(buf, alpha_c, buf, 0, gamma_c)
 
     return buf
+	
+def compareContours(cnt1, cnt2):
+    distance1 = 0
+    distance2 = 0
+    distance = False
+	
+    for point in cnt2:
+        dist = cv2.pointPolygonTest(cnt1,(point[0][0], point[0][1]),False)
+        distance1 += dist
+        if dist == 0:
+            distance1 += 1	
+			
+    for point in cnt1:
+        dist = cv2.pointPolygonTest(cnt2,(point[0][0], point[0][1]),False)
+        distance2 += dist
+        if dist == 0:
+            distance2 += 1
+		
+    if distance1 > 0:
+        distance = True
+        
+		
+    if distance2 > 0:
+        distance = True		
+		
+    print("compareContours", distance1, len(cnt2), distance2, len(cnt1))
+    return distance
+	
+def addNewContours(new, offContours, image):
+    offContoursCopy = offContours    
+    if len(new) != 0:
+        for cnt1 in new:
+            if len(offContours) == 0:
+                offContoursCopy = new
+                break
+            flag = False
+            for index, cnt2 in enumerate(offContours):
+                #print("index", index)
+                if compareContours(cnt2, cnt1):
+                    flag = True
+                    print("index", index)
+            if not flag:
+                offContoursCopy.append(cnt1)
+                print("added")
+                if offContoursCopy is not None:
+                    cv2.drawContours(image, offContoursCopy, -1, (0,255,0), 3)
+                    cv2.imshow("new", image)
+                    cv2.waitKey(0)
+    return offContoursCopy
