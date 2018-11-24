@@ -12,14 +12,19 @@ from find_coins import findSilverCoins
 from find_coins import findCoinsBright
 from find_coins import findCoinsAdaptiveThresholding
 from find_coins import findHoughCircles
+from find_coins import findSilverCoinsInv
 
 from find_bills import findBillsArtur
 from find_bills import findBillsD
+from find_bills import findBillsA
 
 from utilites import remove_not_silver
 from utilites import remove_not_gold
 from utilites import resizing
 from utilites import avgColor
+from utilites import apply_brightness_contrast
+from utilites import compareContours
+from utilites import addNewContours
 
 '''
 lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -125,19 +130,33 @@ def billsValue(img, bills, dwadziescia, piecdziesiat):
                 piecdziesiat = piecdziesiat + 1
     return dwadziescia, piecdziesiat
 
+'''
+    if len(silver) != 0:
+        for cnt1 in silver:
+            if len(offContours) == 0:
+                offContours = silver
+                break
+            for cnt2 in offContours:
+                if not compareContours(cnt2, cnt1):
+                    offContours.append(cnt1)
+'''
+	
 names = [0] * 143
 numbers = ["%03d" % i for i in range(1,27)]
 for i, number in enumerate(numbers):
-    if i < -1:
+    if i < 4:
         continue
     names[i] = "picture_" + numbers[i] + ".jpg"
     image = cv2.imread("nasze/" + names[i])
     image = resizing(image, 500)
     image2 = image.copy()
+	
+    offContours = []
 
     #findHoughCircles(image)
 
     silver = findSilverCoins(image)
+    silver2 = findSilverCoinsInv(image)
     bills2 = findBillsD(image2)
 
     coinsBright = findCoinsBright(image2)
@@ -145,27 +164,49 @@ for i, number in enumerate(numbers):
 	
     coins = findCoinsArtur(image)
     bills = findBillsArtur(image, coins)
-    if coins is not None:
-        coinsValue(image, coins)		
-    #if silver is not None:
-    for contour in coinsBright:
-        cv2.circle(image, (int(contour[0]), int(contour[1])), int(contour[2]), (0, 255, 0), 2)
-		
-    for contour in silver:
-        cv2.circle(image, (int(contour[0]), int(contour[1])), int(contour[2]), (0, 255, 0), 2)
-    if bills is not None:
-        dwadziescia, piecdziesiat = billsValue(image2, bills, 0, 0)
-        cv2.drawContours(image, bills, -1, (0,255,0), 3)
-		
+    bills3 = findBillsA(image2)
+	
+	
+    offContours = coins
+	
+    print("len(silver2)", len(silver2))
+    print("len(offContours)", len(offContours))
+
+			
+    offContours = addNewContours(silver2, offContours, image)
+    offContours = addNewContours(silver, offContours, image)
+    offContours = addNewContours(coinsBright, offContours, image)
+    print("bills")
+    offContours = addNewContours(bills, offContours, image)
+    print("bills2")
+    offContours = addNewContours(bills2, offContours, image)
+    print("bills3")
+    offContours = addNewContours(bills3, offContours, image)
+
 
 	
-    if bills2 is not None:
-        cv2.drawContours(image, bills2, -1, (0,255,0), 3)	
-		
+    if offContours is not None:
+        cv2.drawContours(image, offContours, -1, (0,255,0), 3)
     cv2.imshow(names[i], image)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()
+        #cv2.circle(image, (int(contour[0]), int(contour[1])), int(contour[2]), (0, 255, 0), 2)
 
+    #if bills is not None:
+        #dwadziescia, piecdziesiat = billsValue(image2, bills, 0, 0)
+        #cv2.drawContours(image, bills, -1, (0,255,0), 3)
+		
+    #if bills2 is not None:
+        #cv2.drawContours(image, bills2, -1, (0,255,0), 3)		
+
+	
+    #if bills3 is not None:
+        #cv2.drawContours(image, bills3, -1, (0,255,0), 3)	
+		
     
-    print('Dwadziescia: {}'.format(dwadziescia))
-    print('Piecdziesiat: {}'.format(piecdziesiat))
+     
+
+    #print('Dwadziescia: {}'.format(dwadziescia))
+    #print('Piecdziesiat: {}'.format(piecdziesiat))
+	
+
+    cv2.destroyAllWindows()
