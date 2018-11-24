@@ -143,45 +143,51 @@ def billsValue(img, bills, dwadziescia, piecdziesiat):
 names = [0] * 143
 numbers = ["%03d" % i for i in range(1,27)]
 for i, number in enumerate(numbers):
-    if i < 23:
-        continue
+    #if i < 0:
+    #    continue
     names[i] = "picture_" + numbers[i] + ".jpg"
     image = cv2.imread("nasze/" + names[i])
     image = resizing(image, 500)
-    cv2.imshow(names[i], image)
+    #cv2.imshow(names[i], image)
+    image1 = image.copy()
     image2 = image.copy()
+    image3 = image.copy()
+    image4 = image.copy()
+    image5 = image.copy()
 	
     offContours = []
 
     #findHoughCircles(image)
 
-    silver = findSilverCoins(image)
-    #bills2 = findBillsD(image2)
+    silver = findSilverCoins(image1)
+    coinsBright = findCoinsBright(image2)
+    coinsAdaptive = findCoinsAdaptiveThresholding(image3)
+    coins = findCoinsArtur(image4)
 
-    #coinsBright = findCoinsBright(image2)
-    #coinsAdaptive = findCoinsAdaptiveThresholding(image2)
-	
-    #coins = findCoinsArtur(image)
-    #bills = findBillsArtur(image, coins)
-    #bills3 = findBillsA(image2)
 	
     #h = findHoughCircles(image)
 	
     #offContours = coins
 	
 
-    #offContours = addNewContours(coinsAdaptive, offContours, image)
+    offContours = addNewContours(coinsAdaptive, offContours, image)
     offContours = addNewContours(silver, offContours, image)
-    #offContours = addNewContours(coinsBright, offContours, image)
+    offContours = addNewContours(coinsBright, offContours, image)
     #offContours = addNewContours(bills, offContours, image)
     #offContours = addNewContours(bills2, offContours, image)
     #offContours = addNewContours(bills3, offContours, image)
 
-
+    bills = findBillsArtur(image5, offContours)
+    #bills3 = findBillsA(image2)
+    #bills2 = findBillsD(image2)
 	
     if offContours is not None:
-        cv2.drawContours(image, offContours, -1, (0,255,0), 3)
-    cv2.imshow(names[i], image)
+        cv2.drawContours(image5, offContours, -1, (0,255,0), 3)
+
+    for b in bills:
+        cv2.drawContours(image5, b, -1, (0,255,0), 3)
+
+    cv2.imshow(names[i], image5)
     cv2.waitKey(0)
         #cv2.circle(image, (int(contour[0]), int(contour[1])), int(contour[2]), (0, 255, 0), 2)
 
