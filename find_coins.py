@@ -44,12 +44,16 @@ def findCoinsAdaptiveThresholding(img):
 	
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     #cv2.imshow("gray", gray)
-	
+    cv2.imshow('gray result', gray)	
     gray_blur = cv2.GaussianBlur(gray, (15, 15), 0)
     #cv2.imshow("gray_blur", gray_blur)
-    
+    cv2.imshow('gray_blur result', gray_blur)    
     thresh = cv2.adaptiveThreshold(gray_blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 1)
-
+    cv2.imshow('thresh result', thresh)
+	
+    #thresh = np.invert(thresh)
+	
+    cv2.imshow('thresh inv result', thresh)
     #cv2.imshow("adaptive", thresh)
 	
     kernel = np.ones((3, 3), np.uint8)
@@ -57,15 +61,17 @@ def findCoinsAdaptiveThresholding(img):
     cont_img = closing.copy()
     _, cont,_ = cv2.findContours(cont_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 	
+    print(len(cont))	
+    surArea = img.shape[0] * img.shape[1]	
     for cnt in cont:
         area = cv2.contourArea(cnt)
-        if area < 2000 or area > 4000:
-            continue
-        if len(cnt) < 5:
-            continue
-        contours.append(cnt)
-        ellipse = cv2.fitEllipse(cnt)
-        cv2.ellipse(img, ellipse, (0,255,0), 2)
+        if 0.002*surArea < area < 0.05*surArea:
+            (x, y), rad = cv2.minEnclosingCircle(cnt)
+            rad = rad * 0.95
+            area2 = np.pi*pow(rad,2)
+            if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
+                contours.append(cnt)
+                cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
 	
 	
     cv2.imshow('findCoinsAdaptiveThresholding result', img)
@@ -76,23 +82,19 @@ def findCoinsBright(img):
     contours = []
     surArea = img.shape[0] * img.shape[1]
 
-    new_image = np.zeros(img.shape, img.dtype)
-
-    alpha = 2 # Simple contrast control
-    beta = -600   # Simple brightness control
-	
-
-    new_image = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)	
-	 
-    flat_object_resized_hsv = cv2.cvtColor(new_image, cv2.COLOR_BGR2HSV)	
+    contrast = apply_brightness_contrast(img, -50, 100)
+    cv2.imshow('contrast', contrast)	 
+    flat_object_resized_hsv = cv2.cvtColor(contrast, cv2.COLOR_BGR2HSV)	
     hue, saturation, value = cv2.split(flat_object_resized_hsv)
 	
-    flat_object_resized_hsv = resizing(flat_object_resized_hsv, 600)
-    #cv2.imshow('flat_object_resized_hsv', flat_object_resized_hsv)
-    retval, thresholded = cv2.threshold(saturation, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-		
-    #cv2.imshow('thresholded', thresholded)	
-	 
+    cv2.imshow('value', value)
+    retval, thresholded = cv2.threshold(value, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+	
+	
+    if np.mean(thresholded) > 128:
+        thresholded = np.invert(thresholded)	
+    
+    cv2.imshow('thresholded', thresholded)
 	
     _, cont, _ = cv2.findContours(thresholded , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)	
 	
@@ -103,26 +105,26 @@ def findCoinsBright(img):
             rad = rad * 0.95
             area2 = np.pi*pow(rad,2)
             if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
-                contours.append((int(x),int(y),int(rad)))
+                contours.append(cnt)
                 cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
 				
-    new_image = resizing(new_image, 600)	
     #cv2.imshow('Original Image', img)
-    #cv2.imshow('New Image', new_image)
+    cv2.imshow('findCoinsBright result', img)
 
 	
     print("findCoinsBright found: ", len(contours))	
-    return contours	
-
+    return contours
+	
 def findSilverCoins(img):
     contours = []
     surArea = img.shape[0] * img.shape[1]
 
     img = remove_not_silver(img)
-    #cv2.imshow("remove_not_silver", img)		
+    cv2.imshow("remove_not_silver", img)		
 
 	
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    cv2.imshow("gray", gray)
     # threshold to find the contour
     retval, thresholded = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
@@ -131,16 +133,8 @@ def findSilverCoins(img):
     thresholded_open = cv2.morphologyEx(thresholded, cv2.MORPH_OPEN, (7,7))
     thresholded_close = cv2.morphologyEx(thresholded_open, cv2.MORPH_CLOSE, (7,7))
 	
-    avgC = avgColor(img)
-    hsvColors = colorsys.rgb_to_hsv(avgC[2], avgC[1], avgC[0])
-    # value > 100 - jasny obrazek, treshold działa na odwrót
-    print("h", hsvColors[0])
-    print("s", hsvColors[1])
-    print("v", hsvColors[2])
-    if(hsvColors[1] < 0.1):
+    if np.mean(thresholded_close) > 128:
         thresholded_close = np.invert(thresholded_close)
-	
-	
     cv2.imshow('thresholded_close', thresholded_close)
 	
     _, cont, _ = cv2.findContours(thresholded_close, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -153,11 +147,13 @@ def findSilverCoins(img):
             rad = rad * 0.95
             area2 = np.pi*pow(rad,2)
             if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
-                contours.append((int(x),int(y),int(rad)))
+                contours.append(cnt)
                 cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
-    #cv2.imshow("draw_cirlces", img)
+    cv2.imshow("draw_cirlces", img)
     print("findSilverCoins found: ", len(contours))
-    return contours				
+    return contours	
+
+		
     
 	
 def findCoinsArtur(img):
@@ -234,7 +230,7 @@ def findCoinsArtur(img):
                 rad = rad * 0.95
                 area2 = np.pi*pow(rad,2)
                 if 0.002*surArea < area2 < 0.05*surArea and area/area2 > 0.6:
-                    contours.append((int(x),int(y),int(rad)))
+                    contours.append(cnt)
                     cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)  
     print("findCoinsArtur found: ", len(contours))					
     return contours

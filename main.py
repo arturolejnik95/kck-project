@@ -12,7 +12,6 @@ from find_coins import findSilverCoins
 from find_coins import findCoinsBright
 from find_coins import findCoinsAdaptiveThresholding
 from find_coins import findHoughCircles
-from find_coins import findSilverCoinsInv
 
 from find_bills import findBillsArtur
 from find_bills import findBillsD
@@ -144,11 +143,12 @@ def billsValue(img, bills, dwadziescia, piecdziesiat):
 names = [0] * 143
 numbers = ["%03d" % i for i in range(1,27)]
 for i, number in enumerate(numbers):
-    if i < 4:
+    if i < 23:
         continue
     names[i] = "picture_" + numbers[i] + ".jpg"
     image = cv2.imread("nasze/" + names[i])
     image = resizing(image, 500)
+    cv2.imshow(names[i], image)
     image2 = image.copy()
 	
     offContours = []
@@ -156,32 +156,26 @@ for i, number in enumerate(numbers):
     #findHoughCircles(image)
 
     silver = findSilverCoins(image)
-    silver2 = findSilverCoinsInv(image)
-    bills2 = findBillsD(image2)
+    #bills2 = findBillsD(image2)
 
-    coinsBright = findCoinsBright(image2)
-    coinsAdaptive = findCoinsAdaptiveThresholding(image2)
+    #coinsBright = findCoinsBright(image2)
+    #coinsAdaptive = findCoinsAdaptiveThresholding(image2)
 	
-    coins = findCoinsArtur(image)
-    bills = findBillsArtur(image, coins)
-    bills3 = findBillsA(image2)
+    #coins = findCoinsArtur(image)
+    #bills = findBillsArtur(image, coins)
+    #bills3 = findBillsA(image2)
 	
+    #h = findHoughCircles(image)
 	
-    offContours = coins
+    #offContours = coins
 	
-    print("len(silver2)", len(silver2))
-    print("len(offContours)", len(offContours))
 
-			
-    offContours = addNewContours(silver2, offContours, image)
+    #offContours = addNewContours(coinsAdaptive, offContours, image)
     offContours = addNewContours(silver, offContours, image)
-    offContours = addNewContours(coinsBright, offContours, image)
-    print("bills")
-    offContours = addNewContours(bills, offContours, image)
-    print("bills2")
-    offContours = addNewContours(bills2, offContours, image)
-    print("bills3")
-    offContours = addNewContours(bills3, offContours, image)
+    #offContours = addNewContours(coinsBright, offContours, image)
+    #offContours = addNewContours(bills, offContours, image)
+    #offContours = addNewContours(bills2, offContours, image)
+    #offContours = addNewContours(bills3, offContours, image)
 
 
 	
