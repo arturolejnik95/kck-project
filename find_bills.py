@@ -33,7 +33,7 @@ def findBillsArtur(img, coins):
         imgResult = apply_brightness_contrast(imgResult, -70, 127)
     else:
         imgResult = apply_brightness_contrast(imgResult, 80, 127)
-    
+	    
     gray = cv2.cvtColor(imgResult, cv2.COLOR_BGR2GRAY)
     if np.mean(gray) > 180:
         gray = 255 - gray
@@ -49,8 +49,7 @@ def findBillsArtur(img, coins):
         binary = 255 - binary
         
     
-    cv2.imshow('1', binary)
-    cv2.waitKey(0)
+    cv2.imshow('findBillsBinary', binary)
     
     _, cont, _ = cv2.findContours(binary , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
@@ -64,6 +63,7 @@ def findBillsArtur(img, coins):
             peri2 = 6*np.sqrt(area/2)
             if 1.1 > peri/peri2 > 0.9:
                 contours.append(approx)
+    print("findBillsArtur found: ", len(contours))
     return contours
 	
 def findBillsD(img):
@@ -97,4 +97,5 @@ def findBillsD(img):
         # we can assume that we have found our screen
         if len(approx) == 4 and 0.05 * surArea < area < 0.95 * surArea:
             contours.append(approx)
+    print("findBillsD found: ", len(contours))
     return contours
