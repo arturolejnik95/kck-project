@@ -11,6 +11,7 @@ from find_coins import findCoinsArtur
 from find_coins import findSilverCoins
 from find_coins import findCoinsBright
 from find_coins import findCoinsAdaptiveThresholding
+from find_coins import findHoughCircles
 
 from find_bills import findBillsArtur
 from find_bills import findBillsD
@@ -87,30 +88,44 @@ def coinsValue(img, coins):
 def billsValue(img, bills):
     return 0
 
-name = '1.jpg'
-image = cv2.imread(name)
-image = resizing(image, 500)
-image2 = image.copy()
+names = [0] * 143
+numbers = ["%03d" % i for i in range(1,27)]
+for i, number in enumerate(numbers):
+    if i < -1:
+        continue
+    names[i] = "picture_" + numbers[i] + ".jpg"
+    image = cv2.imread("nasze/" + names[i])
+    image = resizing(image, 500)
+    image2 = image.copy()
 
-coins = findCoinsArtur(image)
-bills = findBillsArtur(image, coins)
-silver = findSilverCoins(image)
-#if coins is not None:
-    #coinsValue(image, coins)
-#cv2.drawContours(image, silver, -1, (0,255,0), 3)
-#cv2.imshow("silverMain", silver)
+    #findHoughCircles(image)
 
-cv2.drawContours(image, coins, -1, (0,255,0), 3)
-if bills is not None:
-    billsValue(image, bills)
-    cv2.drawContours(image, bills, -1, (0,255,0), 3)
+    silver = findSilverCoins(image)
+    bills2 = findBillsD(image2)
 
-cv2.imshow(name, image)
-cv2.waitKey(0)
+    coinsBright = findCoinsBright(image2)
+    coinsAdaptive = findCoinsAdaptiveThresholding(image2)
+	
+    coins = findCoinsArtur(image)
+    bills = findBillsArtur(image, coins)
+    if coins is not None:
+        coinsValue(image, coins)		
+    #if silver is not None:
+    for contour in coinsBright:
+        cv2.circle(image, (int(contour[0]), int(contour[1])), int(contour[2]), (0, 255, 0), 2)
+		
+    for contour in silver:
+        cv2.circle(image, (int(contour[0]), int(contour[1])), int(contour[2]), (0, 255, 0), 2)
+    if bills is not None:
+        billsValue(image, bills)
+        cv2.drawContours(image, bills, -1, (0,255,0), 3)
+		
 
-bills2 = findBillsD(image2)
-coinsAdaptive = findCoinsBright(image2)
+	
+    if bills2 is not None:
+        cv2.drawContours(image, bills2, -1, (0,255,0), 3)	
+		
+    cv2.imshow(names[i], image)
+    cv2.waitKey(0)
 
-cv2.imshow(name, image2)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    cv2.destroyAllWindows()

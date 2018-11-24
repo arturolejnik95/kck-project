@@ -36,9 +36,11 @@ def resizing(img, size):
     return img
 
 def remove_not_silver(img):
-    difference = 20
-    white_limit = 240
-    black_limit = 20
+    img = apply_brightness_contrast(img, 0, 20)
+    cv2.imshow('apply_brightness_contrast', img)
+    difference = 40
+    white_limit = 250
+    black_limit = 5
     new_img = img.copy()
     for rowindex, row in enumerate(img):
         for index, (b, g, r) in enumerate(row):		
