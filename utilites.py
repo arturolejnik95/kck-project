@@ -37,7 +37,7 @@ def resizing(img, size):
     return img
 
 def remove_not_silver(img):
-    img = apply_brightness_contrast(img, 0, 20)
+    img = apply_brightness_contrast(img, 40, 0)
     cv2.imshow('apply_brightness_contrast', img)
     difference = 40
     white_limit = 250
