@@ -19,9 +19,10 @@ def avgColor(img):
                 green = green + g
                 red = red + r
                 i = i + 1
-    blue = blue/i
-    green = green/i
-    red = red/i
+    if i > 0:
+        blue = blue/i
+        green = green/i
+        red = red/i
     return blue, green, red
 
 def resizing(img, size):
