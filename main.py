@@ -143,11 +143,12 @@ def billsValue(img, bills, dwadziescia, piecdziesiat):
 names = [0] * 143
 numbers = ["%03d" % i for i in range(1,27)]
 for i, number in enumerate(numbers):
-    if i < -1:
+    if i < 23:
         continue
     names[i] = "picture_" + numbers[i] + ".jpg"
     image = cv2.imread("nasze/" + names[i])
     image = resizing(image, 500)
+    cv2.imshow(names[i], image)
     image2 = image.copy()
 	
     offContours = []
