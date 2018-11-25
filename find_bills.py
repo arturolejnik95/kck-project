@@ -7,6 +7,7 @@ from skimage.morphology import watershed
 from scipy import ndimage
 from skimage import img_as_ubyte
 from utilites import apply_brightness_contrast
+from utilites import compareContoursArtur
 
 
 def findBillsArtur(img, coins):
@@ -43,13 +44,20 @@ def findBillsArtur(img, coins):
         
         if 7 > len(approx) > 3 and 0.03 * surArea < area < 0.40 * surArea:
             peri2 = 6*np.sqrt(area*1.25/2)
-            print(peri/peri2)
             if 1.15 > peri/peri2 > 0.85:
                 cont1.append(approx)
+                
+    coins2 = []
     if coins is not None:            
         for c in coins:
-            (x, y), rad = cv2.minEnclosingCircle(c)
-            cv2.circle(binary, (int(x), int(y)), int(rad+3), (0, 0, 0), 2)
+            inside = False
+            for cnt in cont1:
+                area, intersection = cv2.intersectConvexConvex(c,cnt)
+                if area > 0:
+                    inside = True
+            if not inside:
+                cv2.drawContours(binary, [c], 0, (0, 0, 0), 2)
+                coins2.append(c)
     
     kernel2 = np.ones((5,5), dtype=np.uint8)
     kernel3 = np.ones((8,8), dtype=np.uint8)
@@ -58,7 +66,6 @@ def findBillsArtur(img, coins):
     binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE, kernel3)
     binary = cv2.erode(binary,kernel2,iterations=3)
         
-    
     cont2 = []
     _, cont, _ = cv2.findContours(binary , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
@@ -68,23 +75,59 @@ def findBillsArtur(img, coins):
         approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
         area = cv2.contourArea(cnt)
         
-        if 7 > len(approx) > 3 and 0.03 * surArea < area < 0.40 * surArea:
+        if len(approx) > 3 and 0.05 * surArea < area < 0.40 * surArea:
             peri2 = 6*np.sqrt(area*1.25/2)
-            print(peri/peri2)
             if 1.15 > peri/peri2 > 0.85:
                 cont2.append(approx)
                 
-    if len(cont1) >= len(cont2) and len(cont1) > 0:
-        for c in cont1:
-            contours.append(c)
-    elif len(cont1) < len(cont2) and len(cont2) > 0:
-        for c in cont2:
-            contours.append(c)
-        cv2.imshow('Binary2',binary)
+    contours = compareContoursArtur(cont1,cont2)
+
+    cv2.imshow('Binary2',binary)
     print("findBillsArtur found: ", len(contours))
-    return contours
+    return contours, coins2
+
+
+
+def findBillsBright(img, coins):
+    surArea = img.shape[0] * img.shape[1]
+    contours = []
+    contrast = apply_brightness_contrast(img, 0, 85)
+    gray = cv2.cvtColor(contrast, cv2.COLOR_BGR2GRAY)
+    if np.mean(gray) < 127:
+        contrast = 255 - contrast
+    gray = cv2.cvtColor(contrast, cv2.COLOR_BGR2GRAY)
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY) 
+    if np.mean(binary) > 127:
+        binary = 255 - binary
+    
+    _, cont, _ = cv2.findContours(binary , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
+
+    for cnt in cont:
+        peri = cv2.arcLength(cnt, True)
+        approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+        area = cv2.contourArea(cnt)
+        
+        if len(approx) > 3 and 0.05 * surArea < area < 0.40 * surArea:
+            peri2 = 6*np.sqrt(area*1.25/2)
+            if 1.15 > peri/peri2 > 0.85:
+                contours.append(approx)
+
+    coins2 = []
+    if coins is not None:            
+        for c in coins:
+            inside = False
+            for cnt in contours:
+                area, intersection = cv2.intersectConvexConvex(c,cnt)
+                if area > 0:
+                    inside = True
+            if not inside:
+                coins2.append(c)
+    
+    return contours, coins2
+    
 	
-def findBillsD(img):
+def findBillsD(img, coins):
     contours = []
     surArea = img.shape[0] * img.shape[1]
     #convert to HSV color scheme
@@ -113,12 +156,23 @@ def findBillsD(img):
         area = cv2.contourArea(cnt)
         # if our approximated contour has four points, then
         # we can assume that we have found our screen
-        if len(approx) == 4 and 0.05 * surArea < area < 0.95 * surArea:
+        if len(approx) > 3 and 0.05 * surArea < area < 0.30 * surArea:
             contours.append(approx)
     print("findBillsD found: ", len(contours))
-    return contours
+    coins2 = []
+    if coins is not None:            
+        for c in coins:
+            inside = False
+            for cnt in contours:
+                area, intersection = cv2.intersectConvexConvex(c,cnt)
+                if area > 0:
+                    inside = True
+            if not inside:
+                coins2.append(c)
+    
+    return contours, coins2
 	
-def findBillsA(img):
+def findBillsA(img, coins):
     surArea = img.shape[0] * img.shape[1]
     contours = []
     
@@ -185,4 +239,15 @@ def findBillsA(img):
         if len(approx) == 4 and 0.05 * surArea < area < 0.95 * surArea:
             contours.append(approx)	
     print("findBillsA found: ", len(contours))			
-    return contours
+    coins2 = []
+    if coins is not None:            
+        for c in coins:
+            inside = False
+            for cnt in contours:
+                area, intersection = cv2.intersectConvexConvex(c,cnt)
+                if area > 0:
+                    inside = True
+            if not inside:
+                coins2.append(c)
+    
+    return contours, coins2
