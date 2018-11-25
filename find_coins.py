@@ -34,7 +34,7 @@ def findHoughCircles(image):
 		    cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
  
 	# show the output image
-	    cv2.imshow("output", np.hstack([image, output]))
+	    #cv2.imshow("output", np.hstack([image, output]))
 	    cv2.waitKey(0)
     print("findHoughCircles found: ", len(contours))
     return contours
@@ -44,17 +44,16 @@ def findCoinsAdaptiveThresholding(img):
 	
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     #cv2.imshow("gray", gray)
-    cv2.imshow('gray result', gray)	
+    #cv2.imshow('gray result', gray)	
     gray_blur = cv2.GaussianBlur(gray, (15, 15), 0)
     #cv2.imshow("gray_blur", gray_blur)
-    cv2.imshow('gray_blur result', gray_blur)    
+    #cv2.imshow('gray_blur result', gray_blur)    
     thresh = cv2.adaptiveThreshold(gray_blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 1)
-    cv2.imshow('thresh result', thresh)
+
 	
-    #thresh = np.invert(thresh)
-	
-    cv2.imshow('thresh inv result', thresh)
-    #cv2.imshow("adaptive", thresh)
+    if np.mean(thresh) > 128:
+        thresholded = np.invert(thresh)
+    #cv2.imshow('thresh result', thresh)
 	
     kernel = np.ones((3, 3), np.uint8)
     closing = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=4)
@@ -74,27 +73,29 @@ def findCoinsAdaptiveThresholding(img):
                 cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
 	
 	
-    cv2.imshow('findCoinsAdaptiveThresholding result', img)
+    #cv2.imshow('findCoinsAdaptiveThresholding result', img)
     print("findCoinsAdaptiveThresholding found: ", len(contours))
     return contours
 
+
+	
 def findCoinsBright(img):
     contours = []
     surArea = img.shape[0] * img.shape[1]
 
     contrast = apply_brightness_contrast(img, -50, 100)
-    cv2.imshow('contrast', contrast)	 
+    #cv2.imshow('contrast', contrast)	 
     flat_object_resized_hsv = cv2.cvtColor(contrast, cv2.COLOR_BGR2HSV)	
     hue, saturation, value = cv2.split(flat_object_resized_hsv)
 	
-    cv2.imshow('value', value)
+    #cv2.imshow('value', value)
     retval, thresholded = cv2.threshold(value, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 	
 	
     if np.mean(thresholded) > 128:
         thresholded = np.invert(thresholded)	
     
-    cv2.imshow('thresholded', thresholded)
+    #cv2.imshow('thresholded', thresholded)
 	
     _, cont, _ = cv2.findContours(thresholded , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)	
 	
@@ -120,11 +121,11 @@ def findSilverCoins(img):
     surArea = img.shape[0] * img.shape[1]
 
     img = remove_not_silver(img)
-    cv2.imshow("remove_not_silver", img)		
+    #cv2.imshow("remove_not_silver", img)		
 
 	
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    cv2.imshow("gray", gray)
+    #cv2.imshow("gray", gray)
     # threshold to find the contour
     retval, thresholded = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
@@ -135,7 +136,7 @@ def findSilverCoins(img):
 	
     if np.mean(thresholded_close) > 128:
         thresholded_close = np.invert(thresholded_close)
-    cv2.imshow('thresholded_close', thresholded_close)
+    #cv2.imshow('thresholded_close', thresholded_close)
 	
     _, cont, _ = cv2.findContours(thresholded_close, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
@@ -149,7 +150,7 @@ def findSilverCoins(img):
             if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
                 contours.append(cnt)
                 cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
-    cv2.imshow("draw_cirlces", img)
+    #cv2.imshow("draw_cirlces", img)
     print("findSilverCoins found: ", len(contours))
     return contours	
 
@@ -205,15 +206,12 @@ def findCoinsArtur(img):
     kernel2 = np.ones((3,3), dtype=np.uint8)
     dist = cv2.dilate(dist, kernel2)
     dist_8u = dist.astype('uint8')    
-
-    cv2.imshow("findCoinsDist", dist)
     
     D = ndimage.distance_transform_edt(dist_8u)
     localMax = peak_local_max(D, indices=False, min_distance=20, labels=dist_8u)
     markers = ndimage.label(localMax, structure=np.ones((3, 3)))[0]
     labels = watershed(-D, markers, mask=dist_8u)
     
-
 	
     #contours
     for label in np.unique(labels):
@@ -231,6 +229,7 @@ def findCoinsArtur(img):
                 area2 = np.pi*pow(rad,2)
                 if 0.002*surArea < area2 < 0.05*surArea and area/area2 > 0.6:
                     contours.append(cnt)
-                    cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)  
+                    cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2) 
+    cv2.imshow("findCoinsArtur", img)					
     print("findCoinsArtur found: ", len(contours))					
     return contours

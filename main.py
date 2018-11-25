@@ -24,6 +24,7 @@ from utilites import avgColor
 from utilites import apply_brightness_contrast
 from utilites import compareContours
 from utilites import addNewContours
+from utilites import coinsColor
 
 '''
 lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -143,7 +144,7 @@ def billsValue(img, bills, dwadziescia, piecdziesiat):
 names = [0] * 143
 numbers = ["%03d" % i for i in range(1,27)]
 for i, number in enumerate(numbers):
-    if i < 23:
+    if i < -1:
         continue
     names[i] = "picture_" + numbers[i] + ".jpg"
     image = cv2.imread("nasze/" + names[i])
@@ -151,37 +152,49 @@ for i, number in enumerate(numbers):
     cv2.imshow(names[i], image)
     image2 = image.copy()
 	
+    allCountours = []
+	
     offContours = []
+    cv2.imshow("original", image2)
+    coinsColor(image2)
 
-    #findHoughCircles(image)
 
     silver = findSilverCoins(image)
-    #bills2 = findBillsD(image2)
+    bills2 = findBillsD(image2)
 
-    #coinsBright = findCoinsBright(image2)
-    #coinsAdaptive = findCoinsAdaptiveThresholding(image2)
+    coinsBright = findCoinsBright(image2)
+    coinsAdaptive = findCoinsAdaptiveThresholding(image2)
 	
-    #coins = findCoinsArtur(image)
-    #bills = findBillsArtur(image, coins)
-    #bills3 = findBillsA(image2)
+    coins = findCoinsArtur(image)
+    bills = findBillsArtur(image, coins)
+    bills3 = findBillsA(image2)
+	
+    allCountours.append(coins)
+    allCountours.append(silver)
+    allCountours.append(coinsBright)
+    allCountours.append(coinsAdaptive)
+    allCountours.append(bills)
+    allCountours.append(bills2)
+    allCountours.append(bills3)
 	
     #h = findHoughCircles(image)
 	
-    #offContours = coins
+    offContours = coins
 	
-
-    #offContours = addNewContours(coinsAdaptive, offContours, image)
-    offContours = addNewContours(silver, offContours, image)
-    #offContours = addNewContours(coinsBright, offContours, image)
-    #offContours = addNewContours(bills, offContours, image)
-    #offContours = addNewContours(bills2, offContours, image)
-    #offContours = addNewContours(bills3, offContours, image)
+    for cnt in allCountours:
+        offContours = addNewContours(cnt, offContours, image)
 
 
 	
     if offContours is not None:
         cv2.drawContours(image, offContours, -1, (0,255,0), 3)
     cv2.imshow(names[i], image)
+	
+    for cnt in allCountours:
+        cv2.drawContours(image2, cnt, -1, (0,255,0), 3)
+    cv2.imshow("all", image2)		
+	
+
     cv2.waitKey(0)
         #cv2.circle(image, (int(contour[0]), int(contour[1])), int(contour[2]), (0, 255, 0), 2)
 
