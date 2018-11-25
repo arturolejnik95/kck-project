@@ -42,7 +42,7 @@ def findBillsArtur(img, coins):
         approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
         area = cv2.contourArea(cnt)
         
-        if 7 > len(approx) > 3 and 0.03 * surArea < area < 0.40 * surArea:
+        if 7 > len(approx) > 3 and 0.03 * surArea < area < 0.30 * surArea:
             peri2 = 6*np.sqrt(area*1.25/2)
             if 1.15 > peri/peri2 > 0.85:
                 cont1.append(approx)
@@ -65,6 +65,9 @@ def findBillsArtur(img, coins):
     binary = cv2.dilate(binary,kernel2,iterations=6)
     binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE, kernel3)
     binary = cv2.erode(binary,kernel2,iterations=3)
+
+    if np.mean(binary) > 150:
+        binary = 255 - binary
         
     cont2 = []
     _, cont, _ = cv2.findContours(binary , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -75,7 +78,7 @@ def findBillsArtur(img, coins):
         approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
         area = cv2.contourArea(cnt)
         
-        if len(approx) > 3 and 0.05 * surArea < area < 0.40 * surArea:
+        if 7 > len(approx) > 3 and 0.05 * surArea < area < 0.30 * surArea:
             peri2 = 6*np.sqrt(area*1.25/2)
             if 1.15 > peri/peri2 > 0.85:
                 cont2.append(approx)
@@ -108,7 +111,7 @@ def findBillsBright(img, coins):
         approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
         area = cv2.contourArea(cnt)
         
-        if len(approx) > 3 and 0.05 * surArea < area < 0.40 * surArea:
+        if 7 > len(approx) > 3 and 0.05 * surArea < area < 0.30 * surArea:
             peri2 = 6*np.sqrt(area*1.25/2)
             if 1.15 > peri/peri2 > 0.85:
                 contours.append(approx)
@@ -124,6 +127,41 @@ def findBillsBright(img, coins):
             if not inside:
                 coins2.append(c)
     
+    return contours, coins2
+
+def findBillsContrast(img, coins):
+    surArea = img.shape[0] * img.shape[1]
+    contours = []
+    contrast = apply_brightness_contrast(img, 0, 127)
+    contrast = 255 - contrast
+    cv2.imshow('Contrast', contrast)
+    gray = cv2.cvtColor(contrast, cv2.COLOR_BGR2GRAY)
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)
+    cv2.imshow('Binary', binary)
+    _, cont, _ = cv2.findContours(binary , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
+    for cnt in cont:
+        peri = cv2.arcLength(cnt, True)
+        approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+        area = cv2.contourArea(cnt)
+        
+        if 7 > len(approx) > 3 and 0.05 * surArea < area < 0.30 * surArea:
+            peri2 = 6*np.sqrt(area*1.25/2)
+            if 1.15 > peri/peri2 > 0.85:
+                contours.append(approx)
+
+    coins2 = []
+    if coins is not None:            
+        for c in coins:
+            inside = False
+            for cnt in contours:
+                area, intersection = cv2.intersectConvexConvex(c,cnt)
+                if area > 0:
+                    inside = True
+            if not inside:
+                coins2.append(c)
+    
+    print("findBillsContrast found: ", len(contours))
     return contours, coins2
     
 	
@@ -156,8 +194,10 @@ def findBillsD(img, coins):
         area = cv2.contourArea(cnt)
         # if our approximated contour has four points, then
         # we can assume that we have found our screen
-        if len(approx) > 3 and 0.05 * surArea < area < 0.30 * surArea:
-            contours.append(approx)
+        if 7 > len(approx) > 3 and 0.05 * surArea < area < 0.30 * surArea:
+            peri2 = 6*np.sqrt(area*1.25/2)
+            if 1.15 > peri/peri2 > 0.85:
+                contours.append(approx)
     print("findBillsD found: ", len(contours))
     coins2 = []
     if coins is not None:            
@@ -236,8 +276,10 @@ def findBillsA(img, coins):
         area = cv2.contourArea(cnt)
         # if our approximated contour has four points, then
         # we can assume that we have found our screen
-        if len(approx) == 4 and 0.05 * surArea < area < 0.95 * surArea:
-            contours.append(approx)	
+        if 7 > len(approx) > 3 and 0.05 * surArea < area < 0.30 * surArea:
+            peri2 = 6*np.sqrt(area*1.25/2)
+            if 1.15 > peri/peri2 > 0.85:
+                contours.append(approx)
     print("findBillsA found: ", len(contours))			
     coins2 = []
     if coins is not None:            

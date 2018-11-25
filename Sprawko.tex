@@ -18,7 +18,7 @@
 \hline
 \multicolumn{2}{|c|}{Komunikacja człowiek-komputer}                  \\ \hline
 \multicolumn{2}{|c|}{Rozpoznawanie pieniędzy}                        \\ \hline
-\multicolumn{1}{|l|}{Dominik Doberski 132207} & Artur Olejnik 132... \\ \hline
+\multicolumn{1}{|l|}{Dominik Doberski 132207} & Artur Olejnik 122402 \\ \hline
 \end{tabular}
 \end{table}
 \end{center}
@@ -120,7 +120,7 @@ Treshold oraz wykryte kontury.
 \includegraphics[scale=0.4]{removeNotSilverResult}
 
 \newpage
-\subsubsection*{Usuwanie dublikatów}
+\subsubsection*{Usuwanie duplikatów}
 Dla każdego konturu sprawdzamy czy w liście konturów które rysujemy istnieje taki którego przynajmniej połowa punktów jest wewnątrz danego konturu. Jeżeli tak, zakładamy, że jest to powtórzony kontur i odrzucamy go. W przeciwnym wypadku dodajemy kontur do listy konturów do narysowania.
 Do sprawdzenia, czy punkt jest wewnątrz konturu używamy wbudowanej w opencv funkcji pointPolygonTest.
 
@@ -133,6 +133,20 @@ Zdjęcie z odfiltrowanymi konturami (linie na monetach i banknotach są cieńsze
 \includegraphics[scale=0.8]{filtrowane}
 
 \newpage
+\subsubsection*{Usuwanie elementów wewnątrz banknotów}
+Niektóre elementy wewnątrz banknotów mogą być wykrywane jako monety ze względu na kształt przypominający okrąg lub bardzo skupiony kontur. Aby tego uniknąć wykorzystaliśmy funkcję biblioteki opencv, która sprawdza powierzchnię przecięcia dwóch konturów. Okazała się ona być bardzo skuteczna, została ona wykorzystana również przy usuwaniu duplikatów banknotów. Jeśli wyznaczona powierzchnia była większa od zera, wykryta "moneta" została usunięta z pamięci.
+
+Przy użyciu tej metody należy założyć, że monety nie mogą znajdować się na banknotach, ani nawet na ich krawędziach (na przykład w celu podtrzymania banknotu). Problemem może być znajdywanie się monet bardzo blisko banknotu, co przy niedokładnych metodach, które biorą pod uwagę również powierzchnię w pobliżu monety i banknotu, może doprowadzić do eliminowania tych monet. Takie przypadki akurat w naszym przypadku nie zostały jednak zauważone.
+
+Zdjęcie przed użyciem powyższej metody.
+
+\includegraphics[scale=0.8]{banknoty1}
+
+Zdjęcie po użyciu powyższej metody.
+
+\includegraphics[scale=0.8]{banknoty2}
+
+\newpage
 \subsection*{WNIOSKI}
 Początkowo próbowaliśmy stworzyć jedną funkcję która wykrywa wszystkie monety na zdjęciu. Takie podejście okazało się błędne, odpowiednio dobrane parametry sprawiały, że funkcja działała tylko dla konkretnego zdjęcia, a dla innych zwraca błędny wynik. 
 
@@ -142,7 +156,7 @@ Przykład błędnie znalezionych okręgów i prostokąta.
 
 Dobrym rozwiązaniem okazało się stworzenie wielu funkcji i wybranie sumy znalezionych konturów co jest zaprezentowane w poprzednim punkcie sprawozdania. 
 
-Aby odfiltrować błędnie znalezione kontury odrzucamy te, które są zbyt duże w stosunku do całego zdjęcia.
+Aby odfiltrować błędnie znalezione kontury odrzucamy te, które są zbyt duże w stosunku do całego zdjęcia. Odrzucamy również te kontury monet, które pokrywają się z konturami wykrytych banknotów. Ma to na celu wyeliminowanie wykrytych okręgów, które są częścią wzoru banknotu.
 
 \includegraphics[scale=0.8]{zaduzo}
 
@@ -156,8 +170,7 @@ Wśród posiadanych zdjęć trafiliśmy też na takie, które nie są dobrze roz
 
 \includegraphics[scale=0.8]{slabe}
 
-Zauważyliśmy, że na różnych zdjęciach takie same monety różnią się od siebie kolorem. Dodatkowo, niemal na każdym są one innego koloru niż w rzeczywistości co widać na przykładzie opisanej wcześniej funkcji, która miała filtrować kolory inne niż srebrny.
-Może spowodować to duże problemy z rozpoznaniem monet.
+Zauważyliśmy, że na różnych zdjęciach takie same monety różnią się od siebie kolorem. Co ciekawe, to samo tyczyło się banknotów. Dodatkowo, niemal na każdym zdjęciu monety są innego koloru niż w rzeczywistości. Widać to na przykładzie opisanej wcześniej funkcji, która miała filtrować kolory inne niż srebrny. Może spowodować to duże problemy z rozpoznaniem monet.
 
 Monety 20 groszowe na różnych zdjęciach.
 \includegraphics[scale=1]{20gr1}
