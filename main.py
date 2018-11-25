@@ -27,6 +27,7 @@ from utilites import compareContours
 from utilites import addNewContours
 from utilites import compareContoursArtur
 from utilites import coinsColor
+from utilites import cropContour
 
 '''
 lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -162,6 +163,7 @@ for i, number in enumerate(numbers):
     image23 = image.copy()
     image24 = image.copy()
     image3 = image.copy()
+    imageCoinsValues = image.copy()
 	
 
     offContours1 = []
@@ -176,12 +178,12 @@ for i, number in enumerate(numbers):
     coinsAdaptive = findCoinsAdaptiveThresholding(image13)
     coins = findCoinsArtur(image14)
 
-    allCoins.append(coins)
+    
     allCoins.append(silver)
     allCoins.append(coinsBright)
     allCoins.append(coinsAdaptive)
-
-    offContours1 = coins
+    allCoins.append(coins)
+	
 
 	
     #h = findHoughCircles(image)
@@ -189,6 +191,7 @@ for i, number in enumerate(numbers):
     for cnt in allCoins:
          offContours1 = addNewContours(cnt, offContours1, image)
 
+	
     bills1, offContours2 = findBillsBright(image21, offContours1)
     bills2, offContours3 = findBillsArtur(image22, offContours2)
     bills3, offContours4 = findBillsD(image23, offContours3)
@@ -198,12 +201,16 @@ for i, number in enumerate(numbers):
     bills6 = compareContoursArtur(bills5, bills3)
     allBills = compareContoursArtur(bills6, bills4)
 	
-    if offContours5 is not None:
-        cv2.drawContours(image3, offContours5, -1, (0,255,0), 3)
-
+    if offContours1 is not None:
+        cv2.drawContours(image3, offContours1, -1, (0,255,0), 3)
+    for cnt in offContours1:		 
+        cropContour(imageCoinsValues, cnt)
+		
     for b in allBills:
         cv2.drawContours(image3, [b], 0, (0,255,0), 3)
-
+		
+    #font = cv2.FONT_HERSHEY_SIMPLEX
+    #cv2.putText(img,'OpenCV',(10,500), font, 4,(255,255,255),2,cv2.LINE_AA)
     cv2.imshow(names[i], image3)
     cv2.waitKey(0)
 

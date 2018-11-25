@@ -6,6 +6,7 @@ from skimage.feature import peak_local_max
 from skimage.morphology import watershed
 from scipy import ndimage
 from skimage import img_as_ubyte
+from matplotlib import pyplot as plt
 
 def avgColor(img):
     blue = 0
@@ -176,3 +177,40 @@ def addNewContours(new, offContours, image):
                 #    cv2.imshow("new", image)
                 #    cv2.waitKey(0)
     return offContoursCopy
+'''
+    for row in coin_image:
+        for (b, g, r) in row:  
+            if b != 0 and g != 0 and r != 0:
+                b_color.append(b)
+                g_color.append(g)
+                r_color.append(r)
+                print("color:", (b, g ,r))
+'''
+def coinValue(coin_image, maska):
+    hsv = cv2.cvtColor(coin_image, cv2.COLOR_BGR2HSV)	
+    hue, saturation, value = cv2.split(hsv)
+    color = ('b','g','r')
+    for i,col in enumerate(color):
+        histr = cv2.calcHist([hsv],[i],maska,[256],[0,256])
+        plt.plot(histr,color = col)
+        plt.xlim([0,256])
+		
+    plt.show()
+    return 0
+	
+def cropContour(image, contour):
+    image_g = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    mask = np.zeros_like(image_g) # Create mask where white is what we want, black otherwise
+    #cv2.drawContours(mask, [contour], 0, (0,255,0), 3) # Draw filled contour in mask
+    cv2.drawContours(mask, [contour], -1, 255, 1) # Draw filled contour in mask
+    out = np.zeros_like(image) # Extract out the object and place into output image
+    cv2.fillPoly(mask, pts =[contour], color=(255,255,255))
+    cv2.imshow('mask', mask)
+    out[mask == 255] = image[mask == 255]
+
+ 
+    # Show the output image
+    cv2.imshow('crop', out)
+    coinValue(out, mask)	
+    cv2.waitKey(0)
+    return 0
