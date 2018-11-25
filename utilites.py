@@ -147,26 +147,50 @@ def compareContours(cnt1, cnt2):
 		
     if distance1 > 0:
         distance = True
+        
+		
     if distance2 > 0:
         distance = True		
 		
     print("compareContours", distance1, len(cnt2), distance2, len(cnt1))
     return distance
-        
+	
+def addNewContours(new, offContours, image):
+    offContoursCopy = offContours    
+    if len(new) != 0:
+        for cnt1 in new:
+            if len(offContours) == 0:
+                offContoursCopy = new
+                break
+            flag = False
+            for index, cnt2 in enumerate(offContours):
+                #print("index", index)
+                if compareContours(cnt2, cnt1):
+                    flag = True
+                    print("index", index)
+            if not flag:
+                offContoursCopy.append(cnt1)
+                print("added")
+                #if offContoursCopy is not None:
+                #    cv2.drawContours(image, offContoursCopy, -1, (0,255,0), 3)
+                #    cv2.imshow("new", image)
+                #    cv2.waitKey(0)
+    return offContoursCopy
+
 def watersheding(binary, contours):
     contours2 = []
     if len(contours) > 0:
         for c in contours:
             contours2.append(c)
-
     #watershed    
+    surArea = binary.shape[0] * binary.shape[1]
     dist = cv2.distanceTransform(binary, cv2.DIST_L2, 3)
     cv2.normalize(dist, dist, 0, 1.0, cv2.NORM_MINMAX)
     
     _, dist = cv2.threshold(dist, 0.05, 1.0, cv2.THRESH_BINARY)
 
-    kernel2 = np.ones((3,3), dtype=np.uint8)
-    dist = cv2.dilate(dist, kernel2)
+    #kernel2 = np.ones((3,3), dtype=np.uint8)
+    #dist = cv2.dilate(dist, kernel2)
     dist_8u = dist.astype('uint8')    
 
     #cv2.imshow("findCoinsDist", dist)
@@ -194,25 +218,3 @@ def watersheding(binary, contours):
                 if 0.05*surArea < area2 < 0.04*surArea and area/area2 > 0.6:
                     contours2.append(cnt)
     return contours2
-	
-def addNewContours(new, offContours, image):
-    offContoursCopy = offContours    
-    if len(new) != 0:
-        for cnt1 in new:
-            if len(offContours) == 0:
-                offContoursCopy = new
-                break
-            flag = False
-            for index, cnt2 in enumerate(offContours):
-                #print("index", index)
-                if compareContours(cnt2, cnt1):
-                    flag = True
-                    print("index", index)
-            if not flag:
-                offContoursCopy.append(cnt1)
-                print("added")
-                #if offContoursCopy is not None:
-                #    cv2.drawContours(image, offContoursCopy, -1, (0,255,0), 3)
-                #    cv2.imshow("new", image)
-                #    cv2.waitKey(0)
-    return offContoursCopy
