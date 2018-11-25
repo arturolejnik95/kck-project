@@ -6,6 +6,7 @@ from skimage.feature import peak_local_max
 from skimage.morphology import watershed
 from scipy import ndimage
 from skimage import img_as_ubyte
+from matplotlib import pyplot as plt
 
 def avgColor(img):
     blue = 0
@@ -144,10 +145,11 @@ def compareContours(cnt1, cnt2):
         distance2 += dist
         if dist == 0:
             distance2 += 1
-		
-    if distance1 > 0:
+    print("distance1", distance1)	
+    if distance1 > -10:
         distance = True
-    if distance2 > 0:
+    print("distance2", distance2)
+    if distance2 > -10:
         distance = True		
 		
     print("compareContours", distance1, len(cnt2), distance2, len(cnt1))
@@ -217,3 +219,88 @@ def addNewContours(new, offContours, image):
                 #    cv2.imshow("new", image)
                 #    cv2.waitKey(0)
     return offContoursCopy
+'''
+    for row in coin_image:
+        for (b, g, r) in row:  
+            if b != 0 and g != 0 and r != 0:
+                b_color.append(b)
+                g_color.append(g)
+                r_color.append(r)
+                print("color:", (b, g ,r))
+'''
+def coinValue(coin_image, maska):
+    hsv = cv2.cvtColor(coin_image, cv2.COLOR_BGR2HSV)	
+    hue, saturation, value = cv2.split(hsv)
+    color = ('b','g','r')
+    for i,col in enumerate(color):
+        histr = cv2.calcHist([hsv],[i],maska,[256],[0,256])
+        plt.plot(histr,color = col)
+        plt.xlim([0,256])
+		
+    plt.show()
+	
+    return 0
+	
+def compareRadiuses(maxRadius, radiuses):
+    values = []
+    flag2 = False
+    flag5 = False
+    for radius in radiuses:
+        if maxRadius != radius:
+            print(maxRadius / radius)
+            if maxRadius / radius < 1.02:
+                values.append("biggest")
+            #5zł / 2zl
+            if maxRadius / radius < 1.11 + (0.1):
+                values.append("2zl")
+                flag5 = True
+            #2zł / 20gr
+            elif maxRadius / radius < 1.16 + (0.1):
+                values.append("20gr")
+                flag2 = True
+            #5zł / 20gr
+            elif maxRadius / radius < 1.30 + (0.1):
+                values.append("20gr")
+                flag5 = True
+        else:
+            values.append("biggest") 
+    for i, value in enumerate(values):
+        if value == "biggest":
+            if flag2 and not flag5:
+                values[i] = "2zl"
+            elif flag5 and not flag2:
+                values[i] = "5zl"
+            elif flag5 and flag2:
+                values[i] = "5zl"
+            else:
+                values[i] = "20gr"
+        			
+    return values
+def getCenter(contour):
+    M = cv2.moments(contour)
+    cX = int(M["m10"] / M["m00"])
+    cY = int(M["m01"] / M["m00"])
+    
+    return (cX, cY)
+	
+def getRadius(contour):
+    (x, y), rad = cv2.minEnclosingCircle(contour)
+    return rad
+	
+	
+def cropContour(image, contour):
+    image_g = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    mask = np.zeros_like(image_g) # Create mask where white is what we want, black otherwise
+    #cv2.drawContours(mask, [contour], 0, (0,255,0), 3) # Draw filled contour in mask
+    cv2.drawContours(mask, [contour], -1, 255, 1) # Draw filled contour in mask
+    out = np.zeros_like(image) # Extract out the object and place into output image
+    cv2.fillPoly(mask, pts =[contour], color=(255,255,255))
+    cv2.imshow('mask', mask)
+    out[mask == 255] = image[mask == 255]
+
+ 
+    # Show the output image
+    cv2.imshow('crop', out)
+    coinValue(out, mask)	
+    cv2.waitKey(0)
+    return 0
