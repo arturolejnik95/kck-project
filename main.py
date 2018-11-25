@@ -234,16 +234,16 @@ for i, number in enumerate(numbers):
 	
 
     radiuses = []
-    if offContours1 is not None:
-        cv2.drawContours(image3, offContours1, -1, (0,255,0), 3)
-    for cnt in offContours1:
+    if offContours6 is not None:
+        cv2.drawContours(image3, offContours6, -1, (0,255,0), 3)
+    for cnt in offContours6:
         print("radius:", getRadius(cnt))	
         radiuses.append(getRadius(cnt))	
         #cropContour(imageCoinsValues, cnt)
     values = compareRadiuses(np.max(radiuses), radiuses)
     font = cv2.FONT_HERSHEY_SIMPLEX
 	
-    for index, cnt in enumerate(offContours1):
+    for index, cnt in enumerate(offContours6):
         cv2.putText(image3,values[index], getCenter(cnt), font, 0.5,(0,0,255), 2)
     #for value in values:
         #print("value:", value)	
