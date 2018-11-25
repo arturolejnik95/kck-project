@@ -26,6 +26,7 @@ from utilites import apply_brightness_contrast
 from utilites import compareContours
 from utilites import addNewContours
 from utilites import compareContoursArtur
+from utilites import coinsColor
 
 '''
 lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -145,12 +146,13 @@ def billsValue(img, bills, dwadziescia, piecdziesiat):
 names = [0] * 143
 numbers = ["%03d" % i for i in range(1,27)]
 for i, number in enumerate(numbers):
-    #if i < 0:
-    #    continue
+    if i < -1:
+        continue
     names[i] = "picture_" + numbers[i] + ".jpg"
     image = cv2.imread("nasze/" + names[i])
     image = resizing(image, 500)
     #cv2.imshow(names[i], image)
+    image0 = image.copy()
     image11 = image.copy()
     image12 = image.copy()
     image13 = image.copy()
@@ -161,13 +163,12 @@ for i, number in enumerate(numbers):
     image24 = image.copy()
     image3 = image.copy()
 	
+
     offContours1 = []
     allCoins = []
     allBills = []
     allContours = []
-
-    #findHoughCircles(image)
-
+    coinsColor(image0)
 
 
     silver = findSilverCoins(image11)

@@ -33,6 +33,7 @@ def findHoughCircles(image):
 		    cv2.circle(output, (x, y), r, (0, 255, 0), 4)
 		    cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
  
+
 	    # show the output image
 	    #cv2.imshow("output", np.hstack([image, output]))
 	    #cv2.waitKey(0)
@@ -78,6 +79,8 @@ def findCoinsAdaptiveThresholding(img):
     print("findCoinsAdaptiveThresholding found: ", len(contours))
     return contours
 
+
+	
 def findCoinsBright(img):
     contours = []
     output = img.copy()
@@ -150,6 +153,7 @@ def findSilverCoins(img):
             area2 = np.pi*pow(rad,2)
             if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
                 contours.append(cnt)
+
                 cv2.circle(output, (int(x), int(y)), int(rad), (0, 255, 0), 2)
     #cv2.imshow("draw_cirlces", output)
     print("findSilverCoins found: ", len(contours))
@@ -215,7 +219,6 @@ def findCoinsArtur(img):
     markers = ndimage.label(localMax, structure=np.ones((3, 3)))[0]
     labels = watershed(-D, markers, mask=dist_8u)
     
-
 	
     #contours
     for label in np.unique(labels):
