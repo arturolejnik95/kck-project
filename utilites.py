@@ -38,7 +38,7 @@ def resizing(img, size):
 
 def remove_not_silver(img):
     img = apply_brightness_contrast(img, 40, 0)
-    cv2.imshow('apply_brightness_contrast', img)
+    #cv2.imshow('apply_brightness_contrast', img)
     difference = 40
     white_limit = 250
     black_limit = 5
@@ -57,7 +57,6 @@ def remove_not_gold(img):
             if b > 150 or r < 150 or g < 140 or g > 200:
                 new_img[rowindex][index] = (0,0,0)
     return new_img
-	
 	
 def apply_brightness_contrast(input_img, brightness, contrast):
 
@@ -83,6 +82,37 @@ def apply_brightness_contrast(input_img, brightness, contrast):
         buf = cv2.addWeighted(buf, alpha_c, buf, 0, gamma_c)
 
     return buf
+
+def coinsColor(img):
+    surArea = img.shape[0] * img.shape[1]
+	
+    image_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)	
+    hue, saturation, value = cv2.split(image_hsv)
+    saturation.fill(0)
+    hue.fill(255)
+    image_hsv = cv2.merge([hue, saturation, value])
+    out = cv2.cvtColor(image_hsv, cv2.COLOR_HSV2BGR)	
+
+    cv2.imshow('coinsColor result', out)
+
+    return False
+
+def compareContoursArtur(cnt1, cnt2):
+    contours = []
+    if len(cnt1) > 0:
+        for c1 in cnt1:
+            contours.append(c1)
+    if len(cnt2) > 0:    
+        for c2 in cnt2:
+            intersect = False
+            for c1 in cnt1:
+                area, intersection = cv2.intersectConvexConvex(c1,c2)
+                print('Intersect: {}'.format(area))
+                if area > 0:
+                    intersect = True
+            if not intersect:
+                contours.append(c2)
+    return contours
 	
 def compareContours(cnt1, cnt2):
     distance1 = 0
@@ -127,8 +157,8 @@ def addNewContours(new, offContours, image):
             if not flag:
                 offContoursCopy.append(cnt1)
                 print("added")
-                if offContoursCopy is not None:
-                    cv2.drawContours(image, offContoursCopy, -1, (0,255,0), 3)
-                    cv2.imshow("new", image)
-                    cv2.waitKey(0)
+                #if offContoursCopy is not None:
+                #    cv2.drawContours(image, offContoursCopy, -1, (0,255,0), 3)
+                #    cv2.imshow("new", image)
+                #    cv2.waitKey(0)
     return offContoursCopy
