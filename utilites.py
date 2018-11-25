@@ -155,6 +155,7 @@ def compareContours(cnt1, cnt2):
         
 def watersheding(binary, contours):
     contours2 = []
+    surArea = binary.shape[0] * binary.shape[1]
     if len(contours) > 0:
         for c in contours:
             contours2.append(c)
