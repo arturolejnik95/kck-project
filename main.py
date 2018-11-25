@@ -17,6 +17,7 @@ from find_bills import findBillsArtur
 from find_bills import findBillsD
 from find_bills import findBillsA
 from find_bills import findBillsBright
+from find_bills import findBillsContrast
 
 from utilites import remove_not_silver
 from utilites import remove_not_gold
@@ -161,6 +162,7 @@ for i, number in enumerate(numbers):
     image22 = image.copy()
     image23 = image.copy()
     image24 = image.copy()
+    image25 = image.copy()
     image3 = image.copy()
 	
 
@@ -193,13 +195,15 @@ for i, number in enumerate(numbers):
     bills2, offContours3 = findBillsArtur(image22, offContours2)
     bills3, offContours4 = findBillsD(image23, offContours3)
     bills4, offContours5 = findBillsA(image24, offContours4)
+    bills5, offContours6 = findBillsContrast(image25, offContours5)
     
-    bills5 = compareContoursArtur(bills1, bills2)
-    bills6 = compareContoursArtur(bills5, bills3)
-    allBills = compareContoursArtur(bills6, bills4)
+    bills6 = compareContoursArtur(bills1, bills2)
+    bills7 = compareContoursArtur(bills6, bills3)
+    bills8 = compareContoursArtur(bills7, bills4)
+    allBills = compareContoursArtur(bills8, bills5)
 	
-    if offContours5 is not None:
-        cv2.drawContours(image3, offContours5, -1, (0,255,0), 3)
+    if offContours6 is not None:
+        cv2.drawContours(image3, offContours6, -1, (0,255,0), 3)
 
     for b in allBills:
         cv2.drawContours(image3, [b], 0, (0,255,0), 3)
