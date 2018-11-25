@@ -114,6 +114,20 @@ def compareContoursArtur(cnt1, cnt2):
                 contours.append(c2)
     return contours
 	
+def coinsColor(img):
+    surArea = img.shape[0] * img.shape[1]
+	
+    image_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)	
+    hue, saturation, value = cv2.split(image_hsv)
+    saturation.fill(0)
+    hue.fill(255)
+    image_hsv = cv2.merge([hue, saturation, value])
+    out = cv2.cvtColor(image_hsv, cv2.COLOR_HSV2BGR)	
+
+    cv2.imshow('coinsColor result', out)
+
+    return False
+	
 def compareContours(cnt1, cnt2):
     distance1 = 0
     distance2 = 0
