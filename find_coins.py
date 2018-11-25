@@ -10,6 +10,7 @@ from utilites import apply_brightness_contrast
 from utilites import remove_not_silver
 from utilites import resizing
 from utilites import avgColor
+from utilites import watersheding
 import colorsys
 
 
@@ -78,8 +79,6 @@ def findCoinsAdaptiveThresholding(img):
     #cv2.imshow('findCoinsAdaptiveThresholding result', img)
     print("findCoinsAdaptiveThresholding found: ", len(contours))
     return contours
-
-
 	
 def findCoinsBright(img):
     contours = []
@@ -110,7 +109,7 @@ def findCoinsBright(img):
             area2 = np.pi*pow(rad,2)
             if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
                 contours.append(cnt)
-                cv2.circle(output, (int(x), int(y)), int(rad), (0, 255, 0), 2)
+                #cv2.circle(output, (int(x), int(y)), int(rad), (0, 255, 0), 2)
 				
     #cv2.imshow('Original Image', img)
     #cv2.imshow('findCoinsBright result', output)
@@ -143,7 +142,7 @@ def findSilverCoins(img):
     #cv2.imshow('thresholded_close', thresholded_close)
 	
     _, cont, _ = cv2.findContours(thresholded_close, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
+    cont = sorted(cont, key = cv2.contourArea, reverse = True)[:17]
 	
     for cnt in cont:
         area = cv2.contourArea(cnt)
@@ -158,6 +157,89 @@ def findSilverCoins(img):
     #cv2.imshow("draw_cirlces", output)
     print("findSilverCoins found: ", len(contours))
     return contours 
+
+def findCoinsProg(img):
+    surArea = img.shape[0] * img.shape[1]
+    contours = []
+    
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
+    _,binary = cv2.threshold(gray,80,255,cv2.THRESH_BINARY)
+    if np.mean(binary) > 150:
+        binary = 255 - binary
+
+    _, cont, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cont = sorted(cont, key = cv2.contourArea, reverse = True)[:17]
+
+    for cnt in cont:
+        area = cv2.contourArea(cnt)
+        if 0.002*surArea < area < 0.05*surArea:
+            (x, y), rad = cv2.minEnclosingCircle(cnt)
+            rad = rad * 0.95
+            area2 = np.pi*pow(rad,2)
+            if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
+                contours.append(cnt)
+    contours2 = watersheding(binary, contours)
+    #cv2.imshow("draw_cirlces", output)
+    print("findCoinsProg found: ", len(contours2))
+    return contours2
+
+def findCoinsContrast(img):
+    surArea = img.shape[0] * img.shape[1]
+    contours = []
+    
+    contrast = apply_brightness_contrast(img, 0, 127)
+    gray = cv2.cvtColor(contrast, cv2.COLOR_BGR2GRAY) 
+    _,binary = cv2.threshold(gray,128,255,cv2.THRESH_BINARY)
+    if np.mean(binary) > 128:
+        binary = 255 - binary
+
+    contours = watersheding(binary, contours)
+    print("findCoinsContrast found: ", len(contours))
+    return contours
+
+def findCoinsGaussian1(img):
+    surArea = img.shape[0] * img.shape[1]
+    contours = []
+    output = img.copy()
+    
+    blur = cv2.GaussianBlur(img,(29,29),0)
+    contrast = apply_brightness_contrast(blur,0,127)
+    gray = cv2.cvtColor(contrast, cv2.COLOR_BGR2GRAY) 
+    _,binary = cv2.threshold(gray,0,255,cv2.THRESH_BINARY)
+    if np.mean(binary) > 150:
+        binary = 255 - binary
+
+    _, cont, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cont = sorted(cont, key = cv2.contourArea, reverse = True)[:17]
+
+    for cnt in cont:
+        area = cv2.contourArea(cnt)
+        if 0.002*surArea < area < 0.05*surArea:
+            (x, y), rad = cv2.minEnclosingCircle(cnt)
+            rad = rad * 0.95
+            area2 = np.pi*pow(rad,2)
+            if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
+                contours.append(cnt)
+    cv2.imshow('Gauss', binary)
+    print("findCoinsGauss1 found: ", len(contours))
+    return contours
+
+def findCoinsGaussian2(img):
+    surArea = img.shape[0] * img.shape[1]
+    contours = []
+    output = img.copy()
+    
+    blur = cv2.GaussianBlur(img,(29,29),0)
+    contrast = apply_brightness_contrast(blur,0,127)
+    gray = cv2.cvtColor(contrast, cv2.COLOR_BGR2GRAY) 
+    _,binary = cv2.threshold(gray,0,255,cv2.THRESH_BINARY)
+    if np.mean(binary) > 150:
+        binary = 255 - binary
+
+    contours = watersheding(binary, contours)
+
+    print("findCoinsGauss2 found: ", len(contours))
+    return contours
 	
 def findCoinsArtur(img):
     surArea = img.shape[0] * img.shape[1]
@@ -201,41 +283,7 @@ def findCoinsArtur(img):
     #binary = cv2.erode(binary,kernel3,iterations = 1)
     if np.mean(binary) > 64:
         binary = 128 - binary
- 
-    #watershed    
-    dist = cv2.distanceTransform(binary, cv2.DIST_L2, 3)
-    cv2.normalize(dist, dist, 0, 1.0, cv2.NORM_MINMAX)
-    
-    _, dist = cv2.threshold(dist, 0.05, 1.0, cv2.THRESH_BINARY)
 
-    kernel2 = np.ones((3,3), dtype=np.uint8)
-    dist = cv2.dilate(dist, kernel2)
-    dist_8u = dist.astype('uint8')    
-
-    #cv2.imshow("findCoinsDist", dist)
-    
-    D = ndimage.distance_transform_edt(dist_8u)
-    localMax = peak_local_max(D, indices=False, min_distance=20, labels=dist_8u)
-    markers = ndimage.label(localMax, structure=np.ones((3, 3)))[0]
-    labels = watershed(-D, markers, mask=dist_8u)
-    
-	
-    #contours
-    for label in np.unique(labels):
-        if label == 0:
-            continue
-        mask = np.zeros(dist_8u.shape, dtype="uint8")
-        mask[labels == label] = 255
-        
-        _, cont, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        for cnt in cont:
-            area = cv2.contourArea(cnt)
-            if 0.002*surArea < area < 0.05*surArea:
-                (x, y), rad = cv2.minEnclosingCircle(cnt)
-                rad = rad * 0.95
-                area2 = np.pi*pow(rad,2)
-                if 0.05*surArea < area2 < 0.04*surArea and area/area2 > 0.6:
-                    contours.append(cnt)
-                    #cv2.circle(img, (int(x), int(y)), int(rad), (0, 255, 0), 2)
+    contours = watersheding(binary, contours)
     print("findCoinsArtur found: ", len(contours))					
     return contours

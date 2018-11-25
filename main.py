@@ -12,6 +12,11 @@ from find_coins import findSilverCoins
 from find_coins import findCoinsBright
 from find_coins import findCoinsAdaptiveThresholding
 from find_coins import findHoughCircles
+from find_coins import findCoinsProg
+from find_coins import findCoinsGaussian1
+from find_coins import findCoinsGaussian2
+from find_coins import findCoinsContrast
+
 
 from find_bills import findBillsArtur
 from find_bills import findBillsD
@@ -158,6 +163,10 @@ for i, number in enumerate(numbers):
     image12 = image.copy()
     image13 = image.copy()
     image14 = image.copy()
+    image15 = image.copy()
+    image16 = image.copy()
+    image17 = image.copy()
+    image18 = image.copy()
     image21 = image.copy()
     image22 = image.copy()
     image23 = image.copy()
@@ -177,11 +186,19 @@ for i, number in enumerate(numbers):
     coinsBright = findCoinsBright(image12)
     coinsAdaptive = findCoinsAdaptiveThresholding(image13)
     coins = findCoinsArtur(image14)
+    coinsProg = findCoinsProg(image15)
+    coinsGauss1 = findCoinsGaussian1(image16)
+    coinsGauss2 = findCoinsGaussian2(image17)
+    coinsContrast = findCoinsContrast(image18)
 
     allCoins.append(coins)
     allCoins.append(silver)
     allCoins.append(coinsBright)
     allCoins.append(coinsAdaptive)
+    allCoins.append(coinsProg)
+    allCoins.append(coinsGauss2)
+    allCoins.append(coinsGauss1)
+    allCoins.append(coinsContrast)
 
     offContours1 = coins
 
