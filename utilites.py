@@ -94,9 +94,74 @@ def coinsColor(img):
     image_hsv = cv2.merge([hue, saturation, value])
     out = cv2.cvtColor(image_hsv, cv2.COLOR_HSV2BGR)	
 
-    cv2.imshow('coinsColor result', out)
+    #cv2.imshow('coinsColor result', out)
 
     return False
+
+def billsValueHSV(original, bill):
+    h1 = 0
+    v1 = 0
+    s1 = 0
+    il = 0
+    hsv = cv2.cvtColor(original,cv2.COLOR_BGR2HSV)
+    for row in hsv:
+        for h, s, v in row:
+            h1 = h1 + h
+            v1 = v1 + v
+            s1 = s1 + s
+            il = il + 1
+    if il > 0:
+        h1 = h1/il
+        s1 = s1/il
+        v1 = v1/il   
+        kernel1 = np.array([[-1,-1,-1],[-1,9,-1],[-1,-1,-1]])
+        img = original.copy()
+        mask = np.zeros(img.shape, dtype = np.uint8)
+        cv2.drawContours(mask, [bill], 0, (255, 255, 255), -1)
+        img[mask[:,:] == 0] = 0
+        hsv2 = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+        h2 = 0
+        s2 = 0
+        v2 = 0
+        il2 = 0        
+        for row in hsv2:
+            for h, s, v in row:
+                if v > 50:
+                    h2 = h2 + h
+                    s2 = s2 + s
+                    v2 = v2 + v
+                    il2 = il2 + 1
+        if il2 > 0:
+            h2 = h2/il2
+            s2 = s2/il2
+            v2 = v2/il2
+            val = h2/il2
+            if val < 20:
+                values = "20zl"
+            else:
+                values = "50zl"
+        else:
+            values = "Blad"
+    else:
+        values = "Blad"
+    return values
+
+def billsValue(original,bills):
+    values = []    
+    for c, bill in enumerate(bills):
+        img = original.copy()
+        mask = np.zeros(img.shape, dtype = np.uint8)
+        cv2.drawContours(mask, [bill], 0, (255, 255, 255), -1)
+        img[mask[:,:] == 0] = 0
+
+        b, g, r = avgColor(img)
+        if abs(b - r) <= 10 or b > r or r <= 160 or b <= 135:
+            values.append("50zl")
+        elif r >= 225 or (r >= 210 and abs(r - b) >= 50) or (r >= 200 and abs(r - b) >= 50) or r - b >= 65:
+            values.append("20zl")
+        else:
+            values.append(billsValueHSV(original,bill))
+    return values
 
 def compareContoursArtur(cnt1, cnt2):
     contours = []
@@ -108,7 +173,7 @@ def compareContoursArtur(cnt1, cnt2):
             intersect = False
             for c1 in cnt1:
                 area, intersection = cv2.intersectConvexConvex(c1,c2)
-                print('Intersect: {}'.format(area))
+                #print('Intersect: {}'.format(area))
                 if area > 0:
                     intersect = True
             if not intersect:
@@ -125,7 +190,7 @@ def coinsColor(img):
     image_hsv = cv2.merge([hue, saturation, value])
     out = cv2.cvtColor(image_hsv, cv2.COLOR_HSV2BGR)	
 
-    cv2.imshow('coinsColor result', out)
+    #cv2.imshow('coinsColor result', out)
 
     return False
 	
@@ -145,14 +210,14 @@ def compareContours(cnt1, cnt2):
         distance2 += dist
         if dist == 0:
             distance2 += 1
-    print("distance1", distance1)	
+    #print("distance1", distance1)	
     if distance1 > -10:
         distance = True
-    print("distance2", distance2)
+    #print("distance2", distance2)
     if distance2 > -10:
         distance = True		
 		
-    print("compareContours", distance1, len(cnt2), distance2, len(cnt1))
+    #print("compareContours", distance1, len(cnt2), distance2, len(cnt1))
     return distance
 	
 def addNewContours(new, offContours, image):
@@ -167,10 +232,10 @@ def addNewContours(new, offContours, image):
                 #print("index", index)
                 if compareContours(cnt2, cnt1):
                     flag = True
-                    print("index", index)
+                    #print("index", index)
             if not flag:
                 offContoursCopy.append(cnt1)
-                print("added")
+                #print("added")
                 #if offContoursCopy is not None:
                 #    cv2.drawContours(image, offContoursCopy, -1, (0,255,0), 3)
                 #    cv2.imshow("new", image)
@@ -232,10 +297,10 @@ def addNewContours(new, offContours, image):
                 #print("index", index)
                 if compareContours(cnt2, cnt1):
                     flag = True
-                    print("index", index)
+                    #print("index", index)
             if not flag:
                 offContoursCopy.append(cnt1)
-                print("added")
+                #print("added")
                 #if offContoursCopy is not None:
                 #    cv2.drawContours(image, offContoursCopy, -1, (0,255,0), 3)
                 #    cv2.imshow("new", image)
@@ -248,7 +313,7 @@ def addNewContours(new, offContours, image):
                 b_color.append(b)
                 g_color.append(g)
                 r_color.append(r)
-                print("color:", (b, g ,r))
+                #print("color:", (b, g ,r))
 '''
 def coinValue(coin_image, maska, center, radius):
     hsv = cv2.cvtColor(coin_image, cv2.COLOR_BGR2HSV)	
@@ -256,13 +321,13 @@ def coinValue(coin_image, maska, center, radius):
     #histr = cv2.calcHist([hsv],[2],maska,[256],[0,256])
     x = int(center[1])
     y = int(center[0])
-    print("xy", x, y)
+    #print("xy", x, y)
     srodek = coin_image[x][y]
-    print("srodek", srodek)
+    #print("srodek", srodek)
     x2 = int(x - (radius * 1 / 2))
     y2 = int(y - (radius * 1 / 2))
     skraj = coin_image[x2][y2]
-    print("skraj", skraj)
+    #print("skraj", skraj)
     #w1 = 
     #print("w1", w1)
     if(int(srodek[0]) - int(skraj[0]) > 10):
@@ -285,7 +350,7 @@ def compareRadiuses(maxRadius, radiuses):
     flag5 = 0
     for radius in radiuses:
         if maxRadius != radius:
-            print(maxRadius / radius)
+            #print(maxRadius / radius)
             if maxRadius / radius < 1.05:
                 values.append("biggest")
             #5zł / 2zl

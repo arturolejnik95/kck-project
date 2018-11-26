@@ -38,7 +38,7 @@ def findHoughCircles(image):
 	    # show the output image
 	    #cv2.imshow("output", np.hstack([image, output]))
 	    #cv2.waitKey(0)
-    print("findHoughCircles found: ", len(contours))
+    #print("findHoughCircles found: ", len(contours))
     return contours
 	
 def findCoinsAdaptiveThresholding(img):
@@ -63,7 +63,7 @@ def findCoinsAdaptiveThresholding(img):
     cont_img = closing.copy()
     _, cont,_ = cv2.findContours(cont_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 	
-    print(len(cont))	
+    #print(len(cont))	
     surArea = img.shape[0] * img.shape[1]	
     for cnt in cont:
         area = cv2.contourArea(cnt)
@@ -77,7 +77,7 @@ def findCoinsAdaptiveThresholding(img):
 	
 	
     #cv2.imshow('findCoinsAdaptiveThresholding result', img)
-    print("findCoinsAdaptiveThresholding found: ", len(contours))
+    #print("findCoinsAdaptiveThresholding found: ", len(contours))
     return contours
 	
 def findCoinsBright(img):
@@ -113,10 +113,10 @@ def findCoinsBright(img):
 				
 				
     #cv2.imshow('Original Image', img)
-    cv2.imshow('findCoinsBright result', output)
+    #cv2.imshow('findCoinsBright result', output)
 
 	
-    print("findCoinsBright found: ", len(contours))	
+    #print("findCoinsBright found: ", len(contours))	
     return contours
 	
 def findSilverCoins(img):
@@ -156,7 +156,7 @@ def findSilverCoins(img):
 
                 cv2.circle(output, (int(x), int(y)), int(rad), (0, 255, 0), 2)
     #cv2.imshow("draw_cirlces", output)
-    print("findSilverCoins found: ", len(contours))
+    #print("findSilverCoins found: ", len(contours))
     return contours 
 
 def findCoinsProg(img):
@@ -181,7 +181,7 @@ def findCoinsProg(img):
                 contours.append(cnt)
     contours2 = watersheding(binary, contours)
     #cv2.imshow("draw_cirlces", output)
-    print("findCoinsProg found: ", len(contours2))
+    #print("findCoinsProg found: ", len(contours2))
     return contours2
 
 def findCoinsContrast(img):
@@ -195,7 +195,7 @@ def findCoinsContrast(img):
         binary = 255 - binary
 
     contours = watersheding(binary, contours)
-    print("findCoinsContrast found: ", len(contours))
+    #print("findCoinsContrast found: ", len(contours))
     return contours
 
 def findCoinsGaussian1(img):
@@ -221,8 +221,8 @@ def findCoinsGaussian1(img):
             area2 = np.pi*pow(rad,2)
             if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
                 contours.append(cnt)
-    cv2.imshow('Gauss', binary)
-    print("findCoinsGauss1 found: ", len(contours))
+    #cv2.imshow('Gauss', binary)
+    #print("findCoinsGauss1 found: ", len(contours))
     return contours
 
 def findCoinsGaussian2(img):
@@ -239,7 +239,7 @@ def findCoinsGaussian2(img):
 
     contours = watersheding(binary, contours)
 
-    print("findCoinsGauss2 found: ", len(contours))
+    #print("findCoinsGauss2 found: ", len(contours))
     return contours
 	
 def findCoinsArtur(img):
@@ -286,5 +286,5 @@ def findCoinsArtur(img):
         binary = 128 - binary
 
     contours = watersheding(binary, contours)
-    print("findCoinsArtur found: ", len(contours))					
+    #print("findCoinsArtur found: ", len(contours))					
     return contours
