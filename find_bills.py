@@ -15,23 +15,23 @@ def findBillsArtur(img, coins):
     contours = []
     
     blur = cv2.GaussianBlur(img,(15,15),0)
-    cv2.imshow('Blur',blur)
+    #cv2.imshow('Blur',blur)
     contrast = apply_brightness_contrast(blur, 0, 85)
-    cv2.imshow('Contrast',contrast)
+    #cv2.imshow('Contrast',contrast)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     if np.mean(gray) > 127:
         contrast = 255 - contrast
     
     kernel1 = np.array([[-1,-1,-1],[-1,30,-1],[-1,-1,-1]])
     sharp = cv2.filter2D(contrast,-1,kernel1)
-    cv2.imshow('Sharp',sharp)
+    #cv2.imshow('Sharp',sharp)
     gray = cv2.cvtColor(sharp, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)  
-    cv2.imshow('Binary',binary)
+    #cv2.imshow('Binary',binary)
     
     if np.mean(binary) > 127:
         binary = 255 - binary
-    cv2.imshow('Binary2',binary)
+    #cv2.imshow('Binary2',binary)
     
     cont1 = []
     _, cont, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -85,8 +85,8 @@ def findBillsArtur(img, coins):
                 
     contours = compareContoursArtur(cont1,cont2)
 
-    cv2.imshow('Binary2',binary)
-    print("findBillsArtur found: ", len(contours))
+    #cv2.imshow('Binary2',binary)
+    #print("findBillsArtur found: ", len(contours))
     return contours, coins2
 
 
@@ -134,10 +134,10 @@ def findBillsContrast(img, coins):
     contours = []
     contrast = apply_brightness_contrast(img, 0, 127)
     contrast = 255 - contrast
-    cv2.imshow('Contrast', contrast)
+    #cv2.imshow('Contrast', contrast)
     gray = cv2.cvtColor(contrast, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)
-    cv2.imshow('Binary', binary)
+    #cv2.imshow('Binary', binary)
     _, cont, _ = cv2.findContours(binary , cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cont = sorted(cont, key = cv2.contourArea, reverse = True)[:10]
     for cnt in cont:
@@ -161,7 +161,7 @@ def findBillsContrast(img, coins):
             if not inside:
                 coins2.append(c)
     
-    print("findBillsContrast found: ", len(contours))
+    #print("findBillsContrast found: ", len(contours))
     return contours, coins2
     
 	
@@ -198,7 +198,7 @@ def findBillsD(img, coins):
             peri2 = 6*np.sqrt(area*1.25/2)
             if 1.15 > peri/peri2 > 0.85:
                 contours.append(approx)
-    print("findBillsD found: ", len(contours))
+    #print("findBillsD found: ", len(contours))
     coins2 = []
     if coins is not None:            
         for c in coins:
@@ -280,7 +280,7 @@ def findBillsA(img, coins):
             peri2 = 6*np.sqrt(area*1.25/2)
             if 1.15 > peri/peri2 > 0.85:
                 contours.append(approx)
-    print("findBillsA found: ", len(contours))			
+    #print("findBillsA found: ", len(contours))			
     coins2 = []
     if coins is not None:            
         for c in coins:
