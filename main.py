@@ -37,6 +37,7 @@ from utilites import cropContour
 from utilites import getRadius
 from utilites import compareRadiuses
 from utilites import getCenter
+from utilites import getMax
 
 '''
 lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -88,59 +89,70 @@ def coinsValue(img, coins):
         crop_img55 = crop_img.copy()
         cv2.circle(crop_img55, (rad, rad), rad5zl, (0,0,0), -1, 8, 0)
         
-        blue, green, red = avgColor(crop_img)
-        blue2, green2, red2 = avgColor(crop_img2)
-        blue22, green22, red22 = avgColor(crop_img22)
-        blue5, green5, red5 = avgColor(crop_img5)
-        blue55, green55, red55 = avgColor(crop_img55)
-        #print(blue, green, red)
-        #print(blue2, green2, red2)
-        #print(blue22, green22, red22)
-        #print(blue5, green5, red5)
-        #print(blue55, green55, red55)
-        #print("")
-        #cv2.imshow('1', crop_img22)
-        #cv2.waitKey(0)
-        
-def billsValue(img, bills, dwadziescia, piecdziesiat):
-    for c, bill in enumerate(bills):        
+def billsValue1(original, bill):
+    h1 = 0
+    v1 = 0
+    s1 = 0
+    il = 0
+    hsv = cv2.cvtColor(original,cv2.COLOR_BGR2HSV)
+    for row in hsv:
+        for h, s, v in row:
+            h1 = h1 + h
+            v1 = v1 + v
+            s1 = s1 + s
+            il = il + 1
+    if il > 0:
+        h1 = h1/il
+        s1 = s1/il
+        v1 = v1/il   
         kernel1 = np.array([[-1,-1,-1],[-1,9,-1],[-1,-1,-1]])
-        sharp = cv2.filter2D(img,-1,kernel1)
-        contrast = apply_brightness_contrast(sharp, 0, 127)
-        blur = cv2.GaussianBlur(contrast,(15,15),0)
-        
-        mask = np.zeros(blur.shape, dtype = np.uint8)
+        img = original.copy()
+        mask = np.zeros(img.shape, dtype = np.uint8)
         cv2.drawContours(mask, [bill], 0, (255, 255, 255), -1)
-        blur[mask[:,:] == 0] = 0
-        
-        hsv = cv2.cvtColor(blur,cv2.COLOR_BGR2HSV)
-        i = 0
-        j = 0
-        hsum = 0
-        k = 0
-        for row in hsv:
+        img[mask[:,:] == 0] = 0
+        hsv2 = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+        h2 = 0
+        s2 = 0
+        v2 = 0
+        il2 = 0        
+        for row in hsv2:
             for h, s, v in row:
-                if s < 50 and v > 205:
-                    s = 0
-                    v = 0
-                    blur[i,j,0] = 0
-                    blur[i,j,1] = 0
-                    blur[i,j,2] = 0
-                if s > 50 and v > 50 and v < 205:
-                    hsum = hsum + h
-                    k = k + 1                    
-                j = j + 1
-            i = i + 1
-            j = 0
-        b, g, r = avgColor(blur)
-        if k > 0:
-            val = hsum/k
-            print('{}'.format(val))
-            if val < 15:
-                dwadziescia = dwadziescia + 1
+                if v > 50:
+                    h2 = h2 + h
+                    s2 = s2 + s
+                    v2 = v2 + v
+                    il2 = il2 + 1
+        if il2 > 0:
+            h2 = h2/il2
+            s2 = s2/il2
+            v2 = v2/il2
+            val = h2/il2
+            if val < 20:
+                values = "20zl"
             else:
-                piecdziesiat = piecdziesiat + 1
-    return dwadziescia, piecdziesiat
+                values = "50zl"
+        else:
+            values = "Blad"
+    else:
+        values = "Blad"
+    return values
+
+def billsValue(original,bills):
+    values = []    
+    for c, bill in enumerate(bills):
+        img = original.copy()
+        mask = np.zeros(img.shape, dtype = np.uint8)
+        cv2.drawContours(mask, [bill], 0, (255, 255, 255), -1)
+        img[mask[:,:] == 0] = 0
+
+        b, g, r = avgColor(img)
+        if abs(b - r) <= 10 or b > r or r <= 160 or b <= 135:
+            values.append("50zl")
+        elif r >= 225 or (r >= 210 and abs(r - b) >= 50) or (r >= 200 and abs(r - b) >= 50) or r - b >= 65:
+            values.append("20zl")
+        else:
+            values.append(billsValue1(original,bill))
+    return values
 
 '''
     if len(silver) != 0:
@@ -154,7 +166,7 @@ def billsValue(img, bills, dwadziescia, piecdziesiat):
 '''
 	
 names = [0] * 143
-numbers = ["%03d" % i for i in range(1,27)]
+numbers = ["%03d" % i for i in range(1,28)]
 for i, number in enumerate(numbers):
     if i < -1:
         continue
@@ -209,13 +221,6 @@ for i, number in enumerate(numbers):
     allCoins.append(coins)
 
     offContours1 = []
-
-    #allCoins.append(coins)
-	
-
-
-	
-    #h = findHoughCircles(image)
 	
     for cnt in allCoins:
          offContours1 = addNewContours(cnt, offContours1, image)
@@ -231,25 +236,29 @@ for i, number in enumerate(numbers):
     bills7 = compareContoursArtur(bills6, bills3)
     bills8 = compareContoursArtur(bills7, bills4)
     allBills = compareContoursArtur(bills8, bills5)
-	
 
     radiuses = []
     if offContours6 is not None:
         cv2.drawContours(image3, offContours6, -1, (0,255,0), 3)
     for cnt in offContours6:
         print("radius:", getRadius(cnt))	
-        radiuses.append(getRadius(cnt))	
+        radiuses.append(getRadius(cnt))
         #cropContour(imageCoinsValues, cnt)
-    values = compareRadiuses(np.max(radiuses), radiuses)
+    values = compareRadiuses(getMax(radiuses), radiuses)
     font = cv2.FONT_HERSHEY_SIMPLEX
-	
-    for index, cnt in enumerate(offContours6):
-        cv2.putText(image3,values[index], getCenter(cnt), font, 0.5,(0,0,255), 2)
-    #for value in values:
-        #print("value:", value)	
+
     for b in allBills:
         cv2.drawContours(image3, [b], 0, (0,255,0), 3) 
 
+    for index, cnt in enumerate(offContours6):
+        cv2.putText(image3,values[index], getCenter(cnt), font, 0.5,(0,0,255), 2)
+
+    values2 = billsValue(image.copy(),allBills)
+    if len(values2) > 0:
+        for index, cnt in enumerate(allBills):
+            cv2.putText(image3,values2[index], getCenter(cnt), font, 0.5,(0,0,255), 2)
+    #for value in values:
+        #print("value:", value)
     #font = cv2.FONT_HERSHEY_SIMPLEX
     #cv2.putText(img,'OpenCV',(10,500), font, 4,(255,255,255),2,cv2.LINE_AA)
     cv2.imshow(names[i], image3)
