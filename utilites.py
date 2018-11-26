@@ -250,52 +250,70 @@ def addNewContours(new, offContours, image):
                 r_color.append(r)
                 print("color:", (b, g ,r))
 '''
-def coinValue(coin_image, maska):
+def coinValue(coin_image, maska, center, radius):
     hsv = cv2.cvtColor(coin_image, cv2.COLOR_BGR2HSV)	
     hue, saturation, value = cv2.split(hsv)
-    color = ('b','g','r')
-    for i,col in enumerate(color):
-        histr = cv2.calcHist([hsv],[i],maska,[256],[0,256])
-        plt.plot(histr,color = col)
-        plt.xlim([0,256])
+    #histr = cv2.calcHist([hsv],[2],maska,[256],[0,256])
+    x = int(center[1])
+    y = int(center[0])
+    print("xy", x, y)
+    srodek = coin_image[x][y]
+    print("srodek", srodek)
+    x2 = int(x - (radius * 1 / 2))
+    y2 = int(y - (radius * 1 / 2))
+    skraj = coin_image[x2][y2]
+    print("skraj", skraj)
+    #w1 = 
+    #print("w1", w1)
+    if(int(srodek[0]) - int(skraj[0]) > 10):
+        value = "2zl"
+    elif(int(skraj[0]) - int(srodek[0]) > 15):
+        value = "5zl"
+    else:
+        value = "20gr"
+    #color = ('b','g','r')
+    #for i,col in enumerate(color):
+        #histr = cv2.calcHist([hsv],[i],maska,[256],[0,256])
+        #print(i, np.max(histr))
 		
-    plt.show()
 	
-    return 0
+    return value
 	
 def compareRadiuses(maxRadius, radiuses):
     values = []
-    flag2 = False
-    flag5 = False
+    flag2 = 0
+    flag5 = 0
     for radius in radiuses:
         if maxRadius != radius:
             print(maxRadius / radius)
-            if maxRadius / radius < 1.02:
+            if maxRadius / radius < 1.05:
                 values.append("biggest")
             #5zł / 2zl
-            if maxRadius / radius < 1.11 + (0.1):
+            if maxRadius / radius < 1.11 + (0.05):
                 values.append("2zl")
-                flag5 = True
+                flag5 += 1
             #2zł / 20gr
             elif maxRadius / radius < 1.16 + (0.1):
                 values.append("20gr")
-                flag2 = True
+                flag2 += 1
             #5zł / 20gr
-            elif maxRadius / radius < 1.30 + (0.1):
+            elif maxRadius / radius < 1.30 + (0.05):
                 values.append("20gr")
-                flag5 = True
+                flag5 += 1
+            else:
+                values.append("blank")
         else:
             values.append("biggest") 
     for i, value in enumerate(values):
         if value == "biggest":
-            if flag2 and not flag5:
+            if flag2 > flag5:
                 values[i] = "2zl"
-            elif flag5 and not flag2:
+            elif flag5 > flag2:
                 values[i] = "5zl"
-            elif flag5 and flag2:
-                values[i] = "5zl"
-            else:
+            elif flag5 == 0:
                 values[i] = "20gr"
+            else:
+                values[i] = "blank"
         			
     return values
 def getCenter(contour):
@@ -309,6 +327,9 @@ def getRadius(contour):
     (x, y), rad = cv2.minEnclosingCircle(contour)
     return rad
 	
+def getValueFromColor(img, cnt):
+    value = cropContour(img, cnt)
+    return value
 	
 def cropContour(image, contour):
     image_g = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -317,12 +338,12 @@ def cropContour(image, contour):
     cv2.drawContours(mask, [contour], -1, 255, 1) # Draw filled contour in mask
     out = np.zeros_like(image) # Extract out the object and place into output image
     cv2.fillPoly(mask, pts =[contour], color=(255,255,255))
-    cv2.imshow('mask', mask)
+    #cv2.imshow('mask', mask)
     out[mask == 255] = image[mask == 255]
 
  
     # Show the output image
-    cv2.imshow('crop', out)
-    coinValue(out, mask)	
-    cv2.waitKey(0)
-    return 0
+    #cv2.imshow('crop', out)
+    value = coinValue(out, mask, getCenter(contour), getRadius(contour))	
+    #cv2.waitKey(0)
+    return value

@@ -92,7 +92,7 @@ def findCoinsBright(img):
 	
     #cv2.imshow('value', value)
     retval, thresholded = cv2.threshold(value, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-	
+
 	
     if np.mean(thresholded) > 128:
         thresholded = np.invert(thresholded)	
@@ -109,10 +109,11 @@ def findCoinsBright(img):
             area2 = np.pi*pow(rad,2)
             if 0.002*surArea < area2 < 0.2*surArea and area/area2 > 0.6:
                 contours.append(cnt)
-                #cv2.circle(output, (int(x), int(y)), int(rad), (0, 255, 0), 2)
+                cv2.circle(output, (int(x), int(y)), int(rad), (0, 255, 0), 2)
+				
 				
     #cv2.imshow('Original Image', img)
-    #cv2.imshow('findCoinsBright result', output)
+    cv2.imshow('findCoinsBright result', output)
 
 	
     print("findCoinsBright found: ", len(contours))	

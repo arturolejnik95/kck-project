@@ -37,7 +37,8 @@ from utilites import cropContour
 from utilites import getRadius
 from utilites import compareRadiuses
 from utilites import getCenter
-from utilites import getMax
+from utilites import getValueFromColor
+#from utilites import getMax
 
 '''
 lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -175,6 +176,9 @@ for i, number in enumerate(numbers):
     image = resizing(image, 500)
     #cv2.imshow(names[i], image)
     image0 = image.copy()
+	
+    imageCopy = image.copy()
+	
     image11 = image.copy()
     image12 = image.copy()
     image13 = image.copy()
@@ -239,18 +243,21 @@ for i, number in enumerate(numbers):
 
     radiuses = []
     if offContours6 is not None:
-        cv2.drawContours(image3, offContours6, -1, (0,255,0), 3)
+        cv2.drawContours(image3, offContours6, -1, (0,255,0), 2)
     for cnt in offContours6:
         print("radius:", getRadius(cnt))	
         radiuses.append(getRadius(cnt))
         #cropContour(imageCoinsValues, cnt)
-    values = compareRadiuses(getMax(radiuses), radiuses)
+    if len(radiuses) > 0:
+        values = compareRadiuses(np.max(radiuses), radiuses)
     font = cv2.FONT_HERSHEY_SIMPLEX
 
     for b in allBills:
-        cv2.drawContours(image3, [b], 0, (0,255,0), 3) 
+        cv2.drawContours(image3, [b], 0, (0,255,0), 2) 
 
     for index, cnt in enumerate(offContours6):
+        if(values[index] == "blank"):
+            values[index] = getValueFromColor(imageCopy, cnt)
         cv2.putText(image3,values[index], getCenter(cnt), font, 0.5,(0,0,255), 2)
 
     values2 = billsValue(image.copy(),allBills)
